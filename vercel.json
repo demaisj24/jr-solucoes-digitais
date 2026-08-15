@@ -1,7 +1,10 @@
 {
   "functions": {
-    "api/chat.js": {
-      "maxDuration": 20
-    }
+    "api/chat.js": {"maxDuration": 20},
+    "api/agent-chat.js": {"maxDuration": 20},
+    "api/agents.js": {"maxDuration": 20},
+    "api/asaas-checkout.js": {"maxDuration": 20},
+    "api/subscription-cancel.js": {"maxDuration": 20},
+    "api/webhooks/asaas.js": {"maxDuration": 20}
   }
 }
