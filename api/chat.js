@@ -1,4 +1,7 @@
-const MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
+const CONFIGURED_MODEL = process.env.GEMINI_MODEL || '';
+const MODEL = CONFIGURED_MODEL === 'gemini-3.5-flash' || !CONFIGURED_MODEL
+  ? 'gemini-3.1-flash-lite'
+  : CONFIGURED_MODEL;
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 const buckets = new Map();
