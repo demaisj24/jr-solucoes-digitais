@@ -1,8 +1,11 @@
 const MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
+// Best-effort protection for the public demo. The durable quota for production
+// customers will live in a persistent store; this is intentionally not a billing limit.
 const buckets = new Map();
-const LIMIT = 10;
+const SESSION_LIMIT = 10;
+const IP_LIMIT = 30;
 const WINDOW_MS = 60 * 60 * 1000;
 
 function corsOrigin(req) {
@@ -17,27 +20,29 @@ function corsOrigin(req) {
 }
 
 function json(res, status, body, origin) {
-  res.status(status).setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.setHeader('Access-Control-Allow-Origin', origin);
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Vary', 'Origin');
-  return res.json(body);
+  res.status(status)
+    .setHeader('Content-Type', 'application/json; charset=utf-8')
+    .setHeader('Cache-Control', 'no-store')
+    .setHeader('Access-Control-Allow-Origin', origin)
+    .setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+    .setHeader('Access-Control-Allow-Headers', 'Content-Type')
+    .setHeader('Vary', 'Origin');
+  return res.status(status).json(body);
 }
 
-function clientKey(req) {
+function clientIp(req) {
   const forwarded = req.headers['x-forwarded-for'];
   return String(forwarded || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
 }
 
-function rateLimited(key) {
+function bucketHit(key, limit) {
   const now = Date.now();
   const current = buckets.get(key);
   if (!current || now - current.startedAt > WINDOW_MS) {
     buckets.set(key, { startedAt: now, count: 1 });
     return false;
   }
-  if (current.count >= LIMIT) return true;
+  if (current.count >= limit) return true;
   current.count += 1;
   return false;
 }
@@ -56,18 +61,25 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return json(res, 405, { error: 'Método não permitido.' }, origin);
   if (!process.env.GEMINI_API_KEY) return json(res, 500, { error: 'IA não configurada no servidor.' }, origin);
 
-  if (rateLimited(clientKey(req))) {
-    return json(res, 429, { error: 'Limite da demonstração atingido. Aguarde alguns minutos e tente novamente.' }, origin);
-  }
-
   try {
     const body = req.body || {};
     const systemPrompt = String(body.system_prompt || '').trim().slice(0, 12000);
     const newMessage = String(body.nova_mensagem || '').trim().slice(0, 2000);
     const history = normalizeHistory(body.historico_mensagens);
+    const sessionId = String(body.session_id || '').trim().slice(0, 100);
 
     if (!systemPrompt || !newMessage) {
       return json(res, 400, { error: 'system_prompt e nova_mensagem são obrigatórios.' }, origin);
+    }
+
+    // A sessão recebe a experiência da demonstração; o IP tem um limite mais alto
+    // apenas para impedir abuso automatizado. Nem um nem outro é usado como quota comercial.
+    const ip = clientIp(req);
+    if (sessionId && bucketHit(`session:${ip}:${sessionId}`, SESSION_LIMIT)) {
+      return json(res, 429, { error: 'Você atingiu o limite desta demonstração. Fale com a VENCIVO para colocar seu agente funcionando de verdade.' }, origin);
+    }
+    if (bucketHit(`ip:${ip}`, IP_LIMIT)) {
+      return json(res, 429, { error: 'A demonstração está temporariamente indisponível para este acesso. Tente novamente mais tarde.' }, origin);
     }
 
     const contents = [...history, { role: 'user', parts: [{ text: newMessage }] }];
@@ -80,9 +92,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         system_instruction: { parts: [{ text: systemPrompt }] },
         contents,
-        generationConfig: {
-          maxOutputTokens: 300
-        }
+        generationConfig: { maxOutputTokens: 300 }
       })
     });
 
