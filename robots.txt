@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://vencivo.com.br/sitemap.xml
