@@ -81,7 +81,6 @@ export default async function handler(req, res) {
         system_instruction: { parts: [{ text: systemPrompt }] },
         contents,
         generationConfig: {
-          temperature: 0.35,
           maxOutputTokens: 300
         }
       })
