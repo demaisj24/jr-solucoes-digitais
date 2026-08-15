@@ -1,32 +1,34 @@
 const MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
-// Best-effort protection for the public demo. The durable quota for production
-// customers will live in a persistent store; this is intentionally not a billing limit.
 const buckets = new Map();
 const SESSION_LIMIT = 10;
 const IP_LIMIT = 30;
 const WINDOW_MS = 60 * 60 * 1000;
 
 function corsOrigin(req) {
-  const origin = req.headers.origin || '';
+  const origin = String(req.headers.origin || '').trim();
   const allowed = new Set([
     'https://vencivo.com.br',
     'https://www.vencivo.com.br',
+    'https://vencivo-ai.vercel.app',
     'http://localhost:3000',
     'http://localhost:5173'
   ]);
   return allowed.has(origin) ? origin : 'https://vencivo.com.br';
 }
 
+function setCors(res, origin) {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Vary', 'Origin');
+}
+
 function json(res, status, body, origin) {
-  res.status(status)
-    .setHeader('Content-Type', 'application/json; charset=utf-8')
-    .setHeader('Cache-Control', 'no-store')
-    .setHeader('Access-Control-Allow-Origin', origin)
-    .setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-    .setHeader('Access-Control-Allow-Headers', 'Content-Type')
-    .setHeader('Vary', 'Origin');
+  setCors(res, origin);
   return res.status(status).json(body);
 }
 
@@ -57,9 +59,19 @@ function normalizeHistory(history) {
 
 export default async function handler(req, res) {
   const origin = corsOrigin(req);
-  if (req.method === 'OPTIONS') return json(res, 204, {}, origin);
-  if (req.method !== 'POST') return json(res, 405, { error: 'Método não permitido.' }, origin);
-  if (!process.env.GEMINI_API_KEY) return json(res, 500, { error: 'IA não configurada no servidor.' }, origin);
+
+  if (req.method === 'OPTIONS') {
+    setCors(res, origin);
+    return res.status(204).end();
+  }
+
+  if (req.method !== 'POST') {
+    return json(res, 405, { error: 'Método não permitido.' }, origin);
+  }
+
+  if (!process.env.GEMINI_API_KEY) {
+    return json(res, 500, { error: 'IA não configurada no servidor.' }, origin);
+  }
 
   try {
     const body = req.body || {};
@@ -72,8 +84,6 @@ export default async function handler(req, res) {
       return json(res, 400, { error: 'system_prompt e nova_mensagem são obrigatórios.' }, origin);
     }
 
-    // A sessão recebe a experiência da demonstração; o IP tem um limite mais alto
-    // apenas para impedir abuso automatizado. Nem um nem outro é usado como quota comercial.
     const ip = clientIp(req);
     if (sessionId && bucketHit(`session:${ip}:${sessionId}`, SESSION_LIMIT)) {
       return json(res, 429, { error: 'Você atingiu o limite desta demonstração. Fale com a VENCIVO para colocar seu agente funcionando de verdade.' }, origin);
@@ -107,7 +117,10 @@ export default async function handler(req, res) {
       .join('')
       .trim();
 
-    if (!text) return json(res, 502, { error: 'A IA não retornou uma resposta válida.' }, origin);
+    if (!text) {
+      return json(res, 502, { error: 'A IA não retornou uma resposta válida.' }, origin);
+    }
+
     return json(res, 200, { reply: text }, origin);
   } catch (error) {
     console.error('Chat endpoint error:', error);
