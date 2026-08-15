@@ -1,0 +1,21 @@
+{
+  "id": "/ia.html",
+  "name": "VENCIVO AI",
+  "short_name": "VENCIVO AI",
+  "description": "Crie e teste agentes de atendimento inteligente para sua empresa.",
+  "lang": "pt-BR",
+  "start_url": "/ia.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#070910",
+  "background_color": "#060810",
+  "icons": [
+    {
+      "src": "/icons/vencivo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
