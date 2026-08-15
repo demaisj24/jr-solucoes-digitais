@@ -1,0 +1,1 @@
+Backend VENCIVO AI pronto para publicação na Vercel. Configurar GEMINI_API_KEY e publicar a branch feat/vencivo-ai-real-backend.
