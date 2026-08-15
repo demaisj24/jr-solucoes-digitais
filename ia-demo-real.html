@@ -1,48 +1,113 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="VENCIVO AI — teste um agente de IA real com o conhecimento do seu negócio.">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="VENCIVO AI — crie e teste um agente de IA real com o conhecimento do seu negócio.">
 <title>VENCIVO AI | Agente real</title>
 <style>
-:root{--bg:#060810;--panel:#0d1220;--text:#f7f8fc;--muted:#aab5c5;--cyan:#63e6ff;--violet:#9b7cff;--green:#57e6a8;--line:#ffffff18}
-*{box-sizing:border-box}body{margin:0;color:var(--text);background:radial-gradient(circle at 80% 0,#15304466,transparent 35%),radial-gradient(circle at 10% 30%,#33245a44,transparent 35%),var(--bg);font:17px/1.55 system-ui,Segoe UI,Arial}.wrap{width:min(1180px,calc(100% - 24px));margin:auto}.nav{height:70px;display:flex;justify-content:space-between;align-items:center}.nav a{color:#dbe4ee;text-decoration:none}.brand{font-weight:900;font-size:18px;display:flex;gap:10px;align-items:center}.logo,.avatar{display:grid;place-items:center;background:linear-gradient(135deg,var(--cyan),var(--violet));color:#071018;font-weight:950}.logo{width:42px;height:42px;border-radius:13px}.hero{text-align:center;padding:42px 0 25px}.ey{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:8px 14px;color:#dce5ef;background:#ffffff08}.ey:before{content:'●';color:var(--green);margin-right:8px}h1{font-size:clamp(42px,6vw,76px);line-height:.98;letter-spacing:-.055em;max-width:1000px;margin:20px auto 15px}.grad{background:linear-gradient(100deg,#fff,var(--cyan),var(--violet));-webkit-background-clip:text;color:transparent}.hero p{max-width:850px;margin:auto;color:#bdc7d5;font-size:20px}.grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:18px;padding:20px 0 50px}.panel{border:1px solid var(--line);border-radius:24px;background:#ffffff06;box-shadow:0 25px 80px #0007}.form{padding:25px}.form h2{font-size:27px;margin:0 0 5px}.sub{color:var(--muted);margin:0 0 20px}.field{display:grid;gap:7px;margin-bottom:14px}.field label{font-weight:800}.input,.area{width:100%;border:1px solid var(--line);border-radius:13px;background:#080d17;color:#fff;padding:13px 14px;font:inherit;outline:0}.area{min-height:90px;resize:vertical}.checks{display:grid;grid-template-columns:1fr 1fr;gap:8px}.check{border:1px solid var(--line);border-radius:12px;padding:10px;cursor:pointer}.check:has(input:checked){border-color:#63e6ff55;background:#63e6ff0d}.btn{border:1px solid var(--line);border-radius:13px;padding:13px 17px;background:#ffffff08;color:#fff;font-weight:850;cursor:pointer;font:inherit}.primary{border:0;background:linear-gradient(135deg,var(--cyan),#b0f7ff);color:#071018}.demo{background:#25d366;color:#06130a;border:0}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}.chatpanel{padding:16px;min-height:700px}.chat{height:100%;min-height:665px;border:1px solid var(--line);border-radius:20px;background:#07101a;display:flex;flex-direction:column;overflow:hidden}.head{padding:16px 18px;background:#101a2b;display:flex;gap:11px;align-items:center;border-bottom:1px solid var(--line)}.avatar{width:45px;height:45px;border-radius:13px}.name{font-weight:900}.online{color:var(--green);font-size:13px}.msgs{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:11px}.msg{max-width:85%;padding:12px 14px;border-radius:16px;font-size:16px}.bot{background:#111a2a;border:1px solid #ffffff0c}.user{align-self:flex-end;background:linear-gradient(135deg,#4fdcf5,#8d73ef);color:#071018;font-weight:700}.suggest{display:flex;gap:7px;flex-wrap:wrap;padding:0 16px 10px}.suggest button{border:1px solid var(--line);background:#ffffff06;color:#dbe4ee;border-radius:99px;padding:8px 11px;cursor:pointer}.inputrow{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}.send{width:48px;padding:0}.status{padding:13px 16px;color:#8d9aad;font-size:13px;text-align:center}.success{color:var(--green)}.cta{display:none;margin:0 16px 14px;padding:14px;border:1px solid #57e6a855;border-radius:15px;background:#57e6a80d;text-align:center}.cta strong{display:block;margin-bottom:7px}.cta button{border:0;border-radius:11px;padding:11px 14px;background:linear-gradient(135deg,var(--cyan),#b0f7ff);font-weight:900;cursor:pointer}@media(max-width:850px){.grid{grid-template-columns:1fr}.chatpanel{min-height:580px}.chat{min-height:550px}.checks{grid-template-columns:1fr}}@media(max-width:560px){h1{font-size:43px}.hero p{font-size:17px}.form{padding:19px}.chatpanel{padding:9px}.msgs{padding:13px}.msg{font-size:15px}}
+:root{--bg:#060810;--panel:#0d1220;--text:#f7f8fc;--muted:#aab5c5;--cyan:#63e6ff;--violet:#9b7cff;--green:#57e6a8;--line:#ffffff18;--danger:#ff8f9a}
+*{box-sizing:border-box}body{margin:0;color:var(--text);background:radial-gradient(circle at 80% 0,#15304466,transparent 35%),radial-gradient(circle at 10% 30%,#33245a44,transparent 35%),var(--bg);font:17px/1.55 system-ui,Segoe UI,Arial}.wrap{width:min(1180px,calc(100% - 24px));margin:auto}.nav{height:70px;display:flex;justify-content:space-between;align-items:center}.nav a{color:#dbe4ee;text-decoration:none}.brand{font-weight:900;font-size:18px;display:flex;gap:10px;align-items:center}.logo,.avatar{display:grid;place-items:center;background:linear-gradient(135deg,var(--cyan),var(--violet));color:#071018;font-weight:950}.logo{width:42px;height:42px;border-radius:13px}.hero{text-align:center;padding:42px 0 25px}.ey{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:8px 14px;color:#dce5ef;background:#ffffff08}.ey:before{content:'●';color:var(--green);margin-right:8px}h1{font-size:clamp(42px,6vw,76px);line-height:.98;letter-spacing:-.055em;max-width:1000px;margin:20px auto 15px}.grad{background:linear-gradient(100deg,#fff,var(--cyan),var(--violet));-webkit-background-clip:text;color:transparent}.hero p{max-width:850px;margin:auto;color:#bdc7d5;font-size:20px}.grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:18px;padding:20px 0 50px}.panel{border:1px solid var(--line);border-radius:24px;background:#ffffff06;box-shadow:0 25px 80px #0007}.form{padding:25px}.form h2{font-size:27px;margin:0 0 5px}.sub{color:var(--muted);margin:0 0 20px}.field{display:grid;gap:7px;margin-bottom:14px}.field label{font-weight:800}.input,.area,.select{width:100%;border:1px solid var(--line);border-radius:13px;background:#080d17;color:#fff;padding:13px 14px;font:inherit;outline:0}.input:focus,.area:focus,.select:focus{border-color:#63e6ff88;box-shadow:0 0 0 3px #63e6ff12}.select option{background:#0d1220;color:#fff}.area{min-height:100px;resize:vertical}.checks{display:grid;grid-template-columns:1fr 1fr;gap:8px}.check{border:1px solid var(--line);border-radius:12px;padding:10px;cursor:pointer}.check:has(input:checked){border-color:#63e6ff55;background:#63e6ff0d}.check input{accent-color:#63e6ff}.hint{color:#8d9aad;font-size:13px;margin-top:-2px}.btn{border:1px solid var(--line);border-radius:13px;padding:13px 17px;background:#ffffff08;color:#fff;font-weight:850;cursor:pointer;font:inherit}.btn:disabled{opacity:.55;cursor:not-allowed}.primary{border:0;background:linear-gradient(135deg,var(--cyan),#b0f7ff);color:#071018}.demo{background:#25d366;color:#06130a;border:0}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}.chatpanel{padding:16px;min-height:700px}.chat{height:100%;min-height:665px;border:1px solid var(--line);border-radius:20px;background:#07101a;display:flex;flex-direction:column;overflow:hidden}.head{padding:16px 18px;background:#101a2b;display:flex;gap:11px;align-items:center;border-bottom:1px solid var(--line)}.avatar{width:45px;height:45px;border-radius:13px}.name{font-weight:900}.online{color:var(--green);font-size:13px}.msgs{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:11px}.msg{max-width:85%;padding:12px 14px;border-radius:16px;font-size:16px;white-space:pre-wrap}.bot{background:#111a2a;border:1px solid #ffffff0c}.user{align-self:flex-end;background:linear-gradient(135deg,#4fdcf5,#8d73ef);color:#071018;font-weight:700}.suggest{display:flex;gap:7px;flex-wrap:wrap;padding:0 16px 10px}.suggest button{border:1px solid var(--line);background:#ffffff06;color:#dbe4ee;border-radius:99px;padding:8px 11px;cursor:pointer}.suggest button:disabled{opacity:.45;cursor:not-allowed}.inputrow{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}.send{width:48px;padding:0}.status{padding:13px 16px;color:#8d9aad;font-size:13px;text-align:center;min-height:43px}.success{color:var(--green)}.error{color:var(--danger)}.cta{display:none;margin:0 16px 14px;padding:14px;border:1px solid #57e6a855;border-radius:15px;background:#57e6a80d;text-align:center}.cta strong{display:block;margin-bottom:7px}.cta button{border:0;border-radius:11px;padding:11px 14px;background:linear-gradient(135deg,var(--cyan),#b0f7ff);font-weight:900;cursor:pointer}@media(max-width:850px){.grid{grid-template-columns:1fr}.chatpanel{min-height:580px}.chat{min-height:550px}.checks{grid-template-columns:1fr}}@media(max-width:560px){h1{font-size:43px}.hero p{font-size:17px}.form{padding:19px}.chatpanel{padding:9px}.msgs{padding:13px}.msg{font-size:15px}}
 </style>
 </head>
 <body>
 <header class="wrap nav"><a class="brand" href="index.html"><span class="logo">V</span>VENCIVO <span style="color:#8994a8">AI</span></a><a href="index.html">← Voltar</a></header>
 <main>
-<section class="hero wrap"><span class="ey">VENCIVO AI · demonstração com IA real</span><h1>Seu negócio ensina. A IA <span class="grad">atende.</span></h1><p>Cadastre as informações reais da empresa e converse com um agente que usa esse conhecimento. Teste agora a experiência que depois pode ser levada ao WhatsApp comercial.</p></section>
+<section class="hero wrap"><span class="ey">VENCIVO AI · demonstração com IA real</span><h1>Seu negócio ensina. A IA <span class="grad">atende.</span></h1><p>Informe como sua empresa funciona e veja um agente de IA responder usando o conhecimento do seu negócio. É uma demonstração real do atendimento que depois pode funcionar no WhatsApp comercial.</p></section>
 <section class="grid wrap">
 <div class="panel form">
-<h2>Configure seu funcionário digital</h2><p class="sub">Quanto mais informações reais você fornecer, mais útil será o teste.</p>
-<div class="field"><label>Empresa</label><input class="input" id="empresa" placeholder="Oficina do Tião"></div>
-<div class="field"><label>Segmento</label><input class="input" id="segmento" placeholder="Oficina mecânica"></div>
-<div class="field"><label>WhatsApp comercial</label><input class="input" id="whatsapp" placeholder="(33) 98888-7777"></div>
-<div class="field"><label>Cidade / região</label><input class="input" id="cidade" placeholder="Teófilo Otoni - MG"></div>
-<div class="field"><label>Endereço</label><input class="input" id="endereco" placeholder="Av. Central, 250 — Centro"></div>
-<div class="field"><label>Horário</label><input class="input" id="horario" placeholder="segunda a sexta, 8h às 17h"></div>
-<div class="field"><label>Produtos, serviços e preços</label><textarea class="area" id="oferta" placeholder="Troca de óleo — R$ 200; alinhamento — R$ 120"></textarea></div>
-<div class="field"><label>Outras informações</label><textarea class="area" id="extra" placeholder="Formas de pagamento, garantias, marcas, regras, diferenciais, FAQ..."></textarea></div>
-<div class="field"><label>Funções autorizadas</label><div class="checks"><label class="check"><input type="checkbox" value="responder dúvidas" checked> Responder dúvidas</label><label class="check"><input type="checkbox" value="informar preços" checked> Informar preços</label><label class="check"><input type="checkbox" value="apresentar serviços" checked> Apresentar serviços</label><label class="check"><input type="checkbox" value="capturar leads"> Capturar leads</label><label class="check"><input type="checkbox" value="agendar atendimento"> Agendar</label><label class="check"><input type="checkbox" value="encaminhar para humano" checked> Humano</label></div></div>
-<div class="field"><label>Nome do agente</label><input class="input" id="agente" placeholder="Ex.: Tião Assistente"></div>
-<div class="actions"><button class="btn demo" onclick="example()">Carregar Oficina do Tião</button><button class="btn primary" onclick="createAgent()">Criar agente →</button></div>
-<div class="status" id="status">A chave da IA fica somente no servidor.</div>
+<h2>Configure seu funcionário digital</h2><p class="sub">Preencha os dados do negócio. Não coloque senhas, códigos ou dados bancários.</p>
+<div class="field"><label for="empresa">Nome da empresa</label><input class="input" id="empresa" maxlength="100" placeholder="Ex.: Studio Bella"></div>
+<div class="field"><label for="segmento">Segmento</label><select class="select" id="segmento"><option value="">Selecione o segmento</option><option>Salão de beleza</option><option>Barbearia</option><option>Clínica</option><option>Consultório</option><option>Oficina mecânica</option><option>Loja</option><option>Restaurante</option><option>Imobiliária</option><option>Escritório</option><option>Prestador de serviços</option><option>E-commerce</option><option>Outro</option></select></div>
+<div class="field"><label for="whatsapp">WhatsApp comercial</label><input class="input" id="whatsapp" maxlength="30" placeholder="(33) 98888-7777"></div>
+<div class="field"><label for="cidade">Cidade / região</label><input class="input" id="cidade" maxlength="100" placeholder="Teófilo Otoni - MG"></div>
+<div class="field"><label for="endereco">Endereço ou referência</label><input class="input" id="endereco" maxlength="160" placeholder="Centro, próximo à praça principal"></div>
+<div class="field"><label for="horario">Horário de atendimento</label><input class="input" id="horario" maxlength="120" placeholder="Segunda a sexta, 8h às 18h"></div>
+<div class="field"><label for="oferta">Produtos, serviços e preços</label><textarea class="area" id="oferta" maxlength="4000" placeholder="Corte feminino — R$ 80; escova — R$ 60; hidratação — R$ 90"></textarea><span class="hint">Quanto mais informação real você fornecer, mais convincente será o teste.</span></div>
+<div class="field"><label for="extra">Outras informações do negócio</label><textarea class="area" id="extra" maxlength="4000" placeholder="Formas de pagamento, políticas, diferenciais, marcas, perguntas frequentes, regras de atendimento..."></textarea></div>
+<div class="field"><label>O que o agente está autorizado a fazer?</label><div class="checks"><label class="check"><input type="checkbox" value="responder dúvidas" checked> Responder dúvidas</label><label class="check"><input type="checkbox" value="informar preços" checked> Informar preços</label><label class="check"><input type="checkbox" value="apresentar serviços" checked> Apresentar serviços</label><label class="check"><input type="checkbox" value="capturar leads"> Capturar leads</label><label class="check"><input type="checkbox" value="agendar atendimento"> Agendar atendimento</label><label class="check"><input type="checkbox" value="encaminhar para humano" checked> Encaminhar para humano</label></div></div>
+<div class="field"><label for="agente">Nome do agente <span class="hint">(opcional)</span></label><input class="input" id="agente" maxlength="80" placeholder="Ex.: Bella Assistente"></div>
+<div class="actions"><button type="button" class="btn demo" onclick="example()">Carregar exemplo: salão de beleza</button><button type="button" class="btn primary" id="createBtn" onclick="createAgent()">Criar agente →</button></div>
+<div class="status" id="status">Sua chave da IA nunca fica no código do site.</div>
 </div>
-<div class="panel chatpanel"><div class="chat"><div class="head"><div class="avatar" id="av">AI</div><div><div class="name" id="agentName">Seu agente de IA</div><div class="online">● IA online</div></div></div><div class="msgs" id="msgs"><div class="msg bot">Preencha os dados e clique em <b>Criar agente</b>. Depois faça uma pergunta real sobre o negócio.</div></div><div class="suggest"><button onclick="ask('Quais serviços vocês oferecem?')">Quais serviços oferecem?</button><button onclick="ask('Quanto custa a troca de óleo?')">Quanto custa?</button><button onclick="ask('Qual o horário de atendimento?')">Qual o horário?</button><button onclick="ask('Quero agendar')">Quero agendar</button></div><div class="cta" id="cta"><strong>Gostou de ver seu agente trabalhando?</strong><span>O próximo passo é colocar esse atendimento para funcionar no WhatsApp da sua empresa.</span><br><button onclick="location.href='index.html#contato'">Quero colocar no meu negócio</button></div><div class="inputrow"><input class="input" id="question" placeholder="Pergunte ao agente..." onkeydown="if(event.key==='Enter')send()"><button class="btn primary send" onclick="send()">↑</button></div></div></div>
+<div class="panel chatpanel"><div class="chat"><div class="head"><div class="avatar" id="av">AI</div><div><div class="name" id="agentName">Seu agente de IA</div><div class="online">● pronto para demonstração</div></div></div><div class="msgs" id="msgs"><div class="msg bot">Preencha os dados e clique em <b>Criar agente</b>. Depois faça uma pergunta real sobre o negócio.</div></div><div class="suggest"><button type="button" onclick="ask('Quais serviços vocês oferecem?')" disabled>Quais serviços oferecem?</button><button type="button" onclick="ask('Quanto custa um dos serviços?')" disabled>Quanto custa?</button><button type="button" onclick="ask('Qual o horário de atendimento?')" disabled>Qual o horário?</button><button type="button" onclick="ask('Quero agendar')" disabled>Quero agendar</button></div><div class="cta" id="cta"><strong>Gostou de ver seu agente trabalhando?</strong><span>O próximo passo é colocar esse atendimento para funcionar de verdade no WhatsApp da sua empresa.</span><br><button type="button" onclick="location.href='index.html#contato'">Quero colocar no meu negócio</button></div><div class="inputrow"><input class="input" id="question" maxlength="2000" placeholder="Pergunte ao agente..." disabled onkeydown="if(event.key==='Enter')send()"><button type="button" class="btn primary send" id="sendBtn" onclick="send()" disabled>↑</button></div></div></div>
 </section></main>
 <script>
 const $=id=>document.getElementById(id);
-const BACKEND_URL='https://vencivo-ai.vercel.app/api/chat';
+const BACKEND_URL=location.hostname.endsWith('.vercel.app')?'/api/chat':'https://vencivo-ai.vercel.app/api/chat';
 const SESSION_KEY='vencivo_ai_demo_session';
-let agent=null,history=[],replyCount=0;
+let agent=null,history=[],replyCount=0,busy=false;
 let sessionId=localStorage.getItem(SESSION_KEY);
 if(!sessionId){sessionId=(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random());localStorage.setItem(SESSION_KEY,sessionId)}
-function example(){ $('empresa').value='Oficina do Tião';$('segmento').value='Oficina mecânica';$('whatsapp').value='(33) 98888-7777';$('cidade').value='Teófilo Otoni - MG';$('endereco').value='Av. Central, 250 — Centro';$('horario').value='segunda a sexta, 8h às 17h';$('oferta').value='Troca de óleo — R$ 200; alinhamento e balanceamento — R$ 120; revisão preventiva — a partir de R$ 350';$('extra').value='Atendimento direto e objetivo. Pagamento em Pix, cartão ou dinheiro. Se não souber uma informação, encaminhar para um humano.';$('agente').value='Tião Assistente';$('status').textContent='Exemplo carregado. Agora clique em Criar agente.'}
-function createAgent(){const empresa=$('empresa').value.trim()||'Sua empresa',segmento=$('segmento').value.trim()||'seu negócio',funcoes=[...document.querySelectorAll('.check input:checked')].map(x=>x.value);agent={empresa,segmento,whatsapp:$('whatsapp').value.trim(),cidade:$('cidade').value.trim(),endereco:$('endereco').value.trim(),horario:$('horario').value.trim(),oferta:$('oferta').value.trim(),extra:$('extra').value.trim(),funcoes,nome:$('agente').value.trim()||empresa+' Assistente'};history=[];replyCount=0;$('cta').style.display='none';$('agentName').textContent=agent.nome;$('av').textContent=empresa.slice(0,2).toUpperCase();$('msgs').innerHTML='<div class="msg bot">Olá! Sou o <b>'+agent.nome+'</b>. Fui configurado com as informações da '+empresa+'. Faça uma pergunta e veja como posso atender seus clientes.</div>';$('status').innerHTML='<span class="success">Agente configurado.</span> A próxima mensagem será enviada para a IA real.'}
-function prompt(){return `Você é ${agent.nome}, agente de atendimento da ${agent.empresa}, uma empresa do segmento ${agent.segmento}.\n\nCONHECIMENTO OFICIAL DO NEGÓCIO:\nCidade: ${agent.cidade}\nEndereço: ${agent.endereco}\nHorário: ${agent.horario}\nWhatsApp comercial: ${agent.whatsapp}\nProdutos, serviços e preços: ${agent.oferta}\nOutras informações: ${agent.extra}\n\nFUNÇÕES AUTORIZADAS: ${agent.funcoes.join(', ')}.\n\nREGRAS DE SEGURANÇA: Use somente o conhecimento fornecido. Nunca invente preço, horário, disponibilidade, endereço, política ou serviço. Se algo não estiver informado, diga que não possui essa informação e, quando apropriado, ofereça encaminhar para humano. Só agende se a função de agendamento estiver autorizada; como não existe calendário integrado nesta demonstração, nunca confirme um horário como reservado. Não solicite senhas, códigos de autenticação ou dados bancários. Seja cordial, objetivo e responda em 2 a 4 frases. Responda em português do Brasil.`}
+function example(){
+ $('empresa').value='Studio Bella';
+ $('segmento').value='Salão de beleza';
+ $('whatsapp').value='(33) 98888-7777';
+ $('cidade').value='Teófilo Otoni - MG';
+ $('endereco').value='Centro';
+ $('horario').value='segunda a sábado, 8h às 18h';
+ $('oferta').value='Corte feminino — R$ 80; escova — R$ 60; hidratação — R$ 90; manicure — R$ 40; coloração — a partir de R$ 150.';
+ $('extra').value='Atendimento cordial e personalizado. Pagamento em Pix, cartão ou dinheiro. O agente deve informar somente os serviços e valores cadastrados. Quando não souber uma informação, deve encaminhar para uma pessoa da equipe.';
+ $('agente').value='Bella Assistente';
+ $('status').textContent='Exemplo carregado. Agora clique em Criar agente.';
+ $('empresa').focus();
+}
+function setChatEnabled(enabled){
+ $('question').disabled=!enabled;
+ $('sendBtn').disabled=!enabled;
+ document.querySelectorAll('.suggest button').forEach(b=>b.disabled=!enabled);
+}
+function createAgent(){
+ const empresa=$('empresa').value.trim();
+ const segmento=$('segmento').value.trim();
+ const oferta=$('oferta').value.trim();
+ if(!empresa||!segmento||!oferta){$('status').innerHTML='<span class="error">Preencha empresa, segmento e serviços/produtos antes de criar o agente.</span>';return}
+ const funcoes=[...document.querySelectorAll('.check input:checked')].map(x=>x.value);
+ agent={empresa,segmento,whatsapp:$('whatsapp').value.trim(),cidade:$('cidade').value.trim(),endereco:$('endereco').value.trim(),horario:$('horario').value.trim(),oferta,extra:$('extra').value.trim(),funcoes,nome:$('agente').value.trim()||empresa+' Assistente'};
+ history=[];replyCount=0;setChatEnabled(true);$('cta').style.display='none';$('agentName').textContent=agent.nome;$('av').textContent=empresa.slice(0,2).toUpperCase();
+ $('msgs').replaceChildren();
+ const welcome=document.createElement('div');welcome.className='msg bot';welcome.textContent='Olá! Sou '+agent.nome+'. Fui configurado com as informações da '+empresa+'. Faça uma pergunta e veja como posso atender seus clientes.';$('msgs').appendChild(welcome);
+ $('status').innerHTML='<span class="success">Agente configurado.</span> Agora faça uma pergunta.';
+ $('question').focus();
+}
+function buildPrompt(){return `Você é ${agent.nome}, agente de atendimento da ${agent.empresa}, uma empresa do segmento ${agent.segmento}.
+
+CONHECIMENTO OFICIAL DO NEGÓCIO:
+Cidade/região: ${agent.cidade}
+Endereço/referência: ${agent.endereco}
+Horário: ${agent.horario}
+WhatsApp comercial: ${agent.whatsapp}
+Produtos, serviços e preços: ${agent.oferta}
+Outras informações: ${agent.extra}
+
+FUNÇÕES AUTORIZADAS: ${agent.funcoes.join(', ')}.
+
+REGRAS DE SEGURANÇA:
+1. Use somente o conhecimento fornecido acima. Nunca invente preço, horário, disponibilidade, endereço, política, serviço ou condição comercial.
+2. Só execute as funções autorizadas. Se uma função não estiver autorizada, explique isso de forma simples.
+3. Se perguntado algo que não esteja informado, diga que não possui essa informação e, quando apropriado, ofereça encaminhar para uma pessoa da equipe.
+4. A demonstração não possui calendário integrado. Mesmo que agendamento esteja autorizado, nunca confirme uma reserva; apenas colete a intenção e oriente o cliente a concluir com a equipe.
+5. Não solicite senhas, códigos de autenticação, números completos de cartão ou dados bancários.
+6. Seja cordial, objetivo e responda normalmente em 2 a 4 frases.
+7. Responda em português do Brasil.`}
 function add(text,cls){const d=document.createElement('div');d.className='msg '+cls;d.textContent=text;$('msgs').appendChild(d);$('msgs').scrollTop=$('msgs').scrollHeight}
-function ask(q){$('question').value=q;send()}
-async function send(){if(!agent){$('status').textContent='Primeiro configure o agente.';return}const q=$('question').value.trim();if(!q)return;$('question').value='';add(q,'user');$('status').textContent='IA pensando...';try{const r=await fetch(BACKEND_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system_prompt:prompt(),historico_mensagens:history,nova_mensagem:q,session_id:sessionId})});const j=await r.json();if(!r.ok)throw new Error(j.error||'Falha na IA');add(j.reply,'bot');history.push({role:'user',content:q},{role:'assistant',content:j.reply});replyCount++;$('status').innerHTML='<span class="success">Resposta gerada pela IA real.</span>';if(replyCount>=2)$('cta').style.display='block'}catch(e){add(e.message||'Não consegui acessar a IA agora.','bot');$('status').textContent='Não foi possível concluir esta mensagem agora.'}}
+function ask(q){if(busy||!agent)return;$('question').value=q;send()}
+async function send(){
+ if(!agent||busy)return;
+ const q=$('question').value.trim();if(!q)return;
+ busy=true;$('question').value='';add(q,'user');$('status').textContent='IA pensando...';$('sendBtn').disabled=true;document.querySelectorAll('.suggest button').forEach(b=>b.disabled=true);
+ const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),25000);
+ try{
+  const r=await fetch(BACKEND_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system_prompt:buildPrompt(),historico_mensagens:history,nova_mensagem:q,session_id:sessionId}),signal:controller.signal});
+  let j={};try{j=await r.json()}catch{}
+  if(!r.ok)throw new Error(j.error||`Servidor respondeu com erro ${r.status}.`);
+  if(!j.reply)throw new Error('A IA não retornou uma resposta válida.');
+  add(j.reply,'bot');history.push({role:'user',content:q},{role:'assistant',content:j.reply});replyCount++;$('status').innerHTML='<span class="success">Resposta gerada pela IA real.</span>';if(replyCount>=2)$('cta').style.display='block';
+ }catch(e){
+  const message=e.name==='AbortError'?'A resposta demorou mais que o esperado. Tente novamente.':(e.message||'Não foi possível conectar ao agente.');
+  add(message,'bot');$('status').innerHTML='<span class="error">'+message+'</span>';
+ }finally{clearTimeout(timeout);busy=false;$('sendBtn').disabled=false;document.querySelectorAll('.suggest button').forEach(b=>b.disabled=false);$('question').focus()}
+}
 </script>
-</body></html>
+</body>
+</html>
