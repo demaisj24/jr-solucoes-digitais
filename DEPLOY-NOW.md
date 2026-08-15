@@ -1,0 +1,1 @@
+Publicar a branch feat/vencivo-ai-real-backend na Vercel. Variável obrigatória: GEMINI_API_KEY. Variável opcional: GEMINI_MODEL=gemini-3.5-flash.
