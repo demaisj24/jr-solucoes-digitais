@@ -1,4 +1,4 @@
-const MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+const MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 // Proteção da demonstração pública. A quota comercial definitiva deverá usar armazenamento persistente.
@@ -6,6 +6,7 @@ const buckets = new Map();
 const SESSION_LIMIT = 10;
 const IP_LIMIT = 30;
 const WINDOW_MS = 60 * 60 * 1000;
+const GOOGLE_TIMEOUT_MS = 17000;
 
 function corsOrigin(req) {
   const origin = String(req.headers.origin || '').trim();
@@ -52,9 +53,9 @@ function bucketHit(key, limit) {
 
 function normalizeHistory(history) {
   if (!Array.isArray(history)) return [];
-  return history.slice(-12).map((m) => ({
+  return history.slice(-10).map((m) => ({
     role: m?.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: String(m?.content || '').slice(0, 2000) }]
+    parts: [{ text: String(m?.content || '').slice(0, 1500) }]
   })).filter((m) => m.parts[0].text.trim());
 }
 
@@ -76,8 +77,8 @@ export default async function handler(req, res) {
 
   try {
     const body = req.body || {};
-    const systemPrompt = String(body.system_prompt || '').trim().slice(0, 12000);
-    const newMessage = String(body.nova_mensagem || '').trim().slice(0, 2000);
+    const systemPrompt = String(body.system_prompt || '').trim().slice(0, 10000);
+    const newMessage = String(body.nova_mensagem || '').trim().slice(0, 1500);
     const history = normalizeHistory(body.historico_mensagens);
     const sessionId = String(body.session_id || '').trim().slice(0, 100);
 
@@ -95,18 +96,35 @@ export default async function handler(req, res) {
     }
 
     const contents = [...history, { role: 'user', parts: [{ text: newMessage }] }];
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': process.env.GEMINI_API_KEY
-      },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemPrompt }] },
-        contents,
-        generationConfig: { maxOutputTokens: 300 }
-      })
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), GOOGLE_TIMEOUT_MS);
+
+    let response;
+    try {
+      response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': process.env.GEMINI_API_KEY
+        },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents,
+          generationConfig: {
+            maxOutputTokens: 220,
+            thinkingConfig: { thinkingLevel: 'MINIMAL' }
+          }
+        }),
+        signal: controller.signal
+      });
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        return json(res, 504, { error: 'A IA demorou mais que o esperado. Tente novamente.' }, origin);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
 
     const payload = await response.json();
     if (!response.ok) {
