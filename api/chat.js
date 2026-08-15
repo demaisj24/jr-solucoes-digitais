@@ -1,10 +1,11 @@
-const MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+const MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 const buckets = new Map();
 const SESSION_LIMIT = 10;
 const IP_LIMIT = 30;
 const WINDOW_MS = 60 * 60 * 1000;
+const GEMINI_TIMEOUT_MS = 12000;
 
 function corsOrigin(req) {
   const origin = String(req.headers.origin || '').trim();
@@ -93,18 +94,35 @@ export default async function handler(req, res) {
     }
 
     const contents = [...history, { role: 'user', parts: [{ text: newMessage }] }];
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': process.env.GEMINI_API_KEY
-      },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemPrompt }] },
-        contents,
-        generationConfig: { maxOutputTokens: 300 }
-      })
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
+
+    let response;
+    try {
+      response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': process.env.GEMINI_API_KEY
+        },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents,
+          generationConfig: {
+            maxOutputTokens: 180,
+            thinkingConfig: { thinkingLevel: 'minimal' }
+          }
+        }),
+        signal: controller.signal
+      });
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        return json(res, 504, { error: 'A IA demorou para responder. Tente novamente em alguns segundos.' }, origin);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
 
     const payload = await response.json();
     if (!response.ok) {
@@ -118,6 +136,7 @@ export default async function handler(req, res) {
       .trim();
 
     if (!text) {
+      console.error('Gemini empty response:', payload);
       return json(res, 502, { error: 'A IA não retornou uma resposta válida.' }, origin);
     }
 
