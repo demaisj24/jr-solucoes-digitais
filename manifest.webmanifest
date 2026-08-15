@@ -1,8 +1,8 @@
 {
-  "id": "/ia.html",
+  "id": "/vencivo-ai",
   "name": "VENCIVO AI",
   "short_name": "VENCIVO AI",
-  "description": "Crie e teste agentes de atendimento inteligente para sua empresa.",
+  "description": "Crie, teste e conecte agentes de atendimento inteligente para sua empresa.",
   "lang": "pt-BR",
   "start_url": "/ia.html",
   "scope": "/",
@@ -10,12 +10,27 @@
   "orientation": "portrait-primary",
   "theme_color": "#070910",
   "background_color": "#060810",
+  "prefer_related_applications": false,
+  "categories": ["business", "productivity", "utilities"],
   "icons": [
     {
       "src": "/icons/vencivo.svg",
-      "sizes": "any",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/vencivo.svg",
+      "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Testar agente",
+      "short_name": "Testar",
+      "url": "/ia.html"
     }
   ]
 }
