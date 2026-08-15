@@ -10,14 +10,22 @@ const GOOGLE_TIMEOUT_MS = 17000;
 
 function corsOrigin(req) {
   const origin = String(req.headers.origin || '').trim();
-  const allowed = new Set([
-    'https://vencivo.com.br',
-    'https://www.vencivo.com.br',
-    'https://vencivo-ai.vercel.app',
-    'http://localhost:3000',
-    'http://localhost:5173'
-  ]);
-  return allowed.has(origin) ? origin : 'https://vencivo.com.br';
+  if (!origin) return 'https://vencivo.com.br';
+
+  try {
+    const url = new URL(origin);
+    const hostname = url.hostname.toLowerCase();
+    const allowed =
+      hostname === 'vencivo.com.br' ||
+      hostname === 'www.vencivo.com.br' ||
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === 'vencivo-ai.vercel.app' ||
+      hostname.endsWith('.vercel.app');
+    return allowed ? origin : 'https://vencivo.com.br';
+  } catch {
+    return 'https://vencivo.com.br';
+  }
 }
 
 function setCors(res, origin) {
@@ -59,6 +67,23 @@ function normalizeHistory(history) {
   })).filter((m) => m.parts[0].text.trim());
 }
 
+const EXPERT_BEHAVIOR = `
+
+COMPORTAMENTO DE ASSISTENTE EXPERIENTE:
+- Você deve se comportar como um atendente humano experiente naquele negócio, não como um chatbot genérico.
+- Antes de responder, identifique a intenção do cliente e use o conhecimento oficial disponível para dar a resposta mais útil e prática possível.
+- Comece pela resposta que o cliente normalmente espera de um bom atendente: direta, clara e contextualizada. Não comece com frases vagas como "posso ajudar?" quando a pergunta já foi feita.
+- Quando perguntarem sobre serviços, apresente os serviços cadastrados de forma organizada e, se houver detalhes oficiais, explique brevemente para quem são indicados.
+- Quando perguntarem preço, horário, localização, formas de pagamento, funcionamento ou regras, responda com os dados cadastrados. Nunca complete lacunas com suposições.
+- Quando o cliente demonstrar intenção de comprar, contratar ou agendar, conduza a conversa para o próximo passo útil, fazendo apenas as perguntas necessárias.
+- Se faltar uma informação necessária para concluir o atendimento, diga exatamente o que falta e encaminhe para humano quando apropriado.
+- Faça perguntas de esclarecimento somente quando realmente necessárias; evite interrogatórios.
+- Não repita informações que o cliente acabou de fornecer.
+- Não diga que "aprendeu" ou que recebeu um arquivo; simplesmente use o conhecimento disponível.
+- Mantenha linguagem natural em português do Brasil, profissional e compatível com o segmento.
+- O cliente deve perceber que está falando com alguém que conhece profundamente a empresa.
+`;
+
 export default async function handler(req, res) {
   const origin = corsOrigin(req);
 
@@ -77,7 +102,7 @@ export default async function handler(req, res) {
 
   try {
     const body = req.body || {};
-    const systemPrompt = String(body.system_prompt || '').trim().slice(0, 10000);
+    let systemPrompt = String(body.system_prompt || '').trim().slice(0, 10000);
     const newMessage = String(body.nova_mensagem || '').trim().slice(0, 1500);
     const history = normalizeHistory(body.historico_mensagens);
     const sessionId = String(body.session_id || '').trim().slice(0, 100);
@@ -85,6 +110,10 @@ export default async function handler(req, res) {
     if (!systemPrompt || !newMessage) {
       return json(res, 400, { error: 'system_prompt e nova_mensagem são obrigatórios.' }, origin);
     }
+
+    // O comportamento especialista é aplicado no servidor para manter uma camada de segurança
+    // mesmo que o cliente altere o JavaScript da demonstração.
+    systemPrompt += EXPERT_BEHAVIOR;
 
     // O limite de sessão protege a demonstração; o limite por IP reduz abuso automatizado.
     const ip = clientIp(req);
@@ -111,7 +140,7 @@ export default async function handler(req, res) {
           system_instruction: { parts: [{ text: systemPrompt }] },
           contents,
           generationConfig: {
-            maxOutputTokens: 220,
+            maxOutputTokens: 420,
             thinkingConfig: { thinkingLevel: 'MINIMAL' }
           }
         }),
@@ -129,7 +158,7 @@ export default async function handler(req, res) {
     const payload = await response.json();
     if (!response.ok) {
       console.error('Gemini error:', response.status, payload);
-      return json(res, 502, { error: 'Não foi possível obter a resposta da IA agora.' }, origin);
+      return json(res, 502, { error: 'Não foi possível obter a resposta da IA agora.', provider_status: response.status }, origin);
     }
 
     const text = payload?.candidates?.[0]?.content?.parts
