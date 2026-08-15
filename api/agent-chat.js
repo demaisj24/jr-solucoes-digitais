@@ -25,7 +25,7 @@ export default async function handler(req,res){
     const b=req.body||{};const id=clean(b.agent_id,80);const msg=clean(b.nova_mensagem,2000);const sid=clean(b.session_id,100);
     if(!id||!msg)return out(res,req,400,{error:'agent_id e nova_mensagem são obrigatórios.'});
     const client=ip(req);if(sid&&hit(`s:${client}:${sid}`,SESSION_LIMIT))return out(res,req,429,{error:'Este atendimento atingiu o limite temporário de mensagens.'});if(hit(`i:${client}`,IP_LIMIT))return out(res,req,429,{error:'Muitas mensagens neste acesso. Tente novamente mais tarde.'});
-    const rows=await db(`agents?public_id=eq.${encodeURIComponent(id)}&status=in.(demo,active)&select=id,company_name,agent_name,segment,system_prompt&limit=1`);const agent=rows?.[0];
+    const rows=await db(`agents?public_id=eq.${encodeURIComponent(id)}&status=in.(demo,active)&select=id,public_id,company_name,agent_name,segment,system_prompt&limit=1`);const agent=rows?.[0];
     if(!agent)return out(res,req,404,{error:'Agente não encontrado ou indisponível.'});
     let knowledge='';try{const k=await db(`agent_knowledge?agent_id=eq.${encodeURIComponent(agent.id)}&select=content&order=created_at.desc&limit=3`);knowledge=k.map(x=>x.content).join('\n\n').slice(0,18000)}catch{}
     const fallback=`Você é ${agent.agent_name}, assistente virtual da empresa ${agent.company_name}, segmento ${agent.segment}. Atenda com cordialidade, objetividade e alto nível profissional. Use somente informações disponíveis sobre a empresa. Quando não souber algo, diga que irá encaminhar a informação para um atendente humano. Nunca invente preços, horários, disponibilidade ou agendamentos. Ao concluir o atendimento, agradeça de forma natural e deixe o cliente à vontade para retornar.`;
