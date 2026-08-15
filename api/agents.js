@@ -1,4 +1,4 @@
-const SUPABASE_URL = String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
+const SUPABASE_URL = 'https://uxmlmyhiagjefuufanyg.supabase.co';
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const WINDOW_MS = 60 * 60 * 1000;
 const CREATE_LIMIT = 5;
@@ -9,7 +9,7 @@ function json(res,req,status,body){headers(res,req);return res.status(status).js
 function ip(req){return String(req.headers['x-forwarded-for']||req.socket?.remoteAddress||'unknown').split(',')[0].trim()}
 function limited(key){const now=Date.now(),x=buckets.get(key);if(!x||now-x.startedAt>WINDOW_MS){buckets.set(key,{startedAt:now,count:1});return false}if(x.count>=CREATE_LIMIT)return true;x.count++;return false}
 function clean(value,max=6000){return String(value??'').trim().slice(0,max)}
-async function db(path,options={}){if(!SUPABASE_URL||!SERVICE_ROLE_KEY)throw new Error('Supabase não configurado no servidor.');const response=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{...options,headers:{apikey:SERVICE_ROLE_KEY,Authorization:`Bearer ${SERVICE_ROLE_KEY}`,'Content-Type':'application/json',Prefer:options.method==='POST'?'return=representation':undefined,...(options.headers||{})}});const payload=await response.json().catch(()=>null);if(!response.ok){console.error('Supabase error',response.status,payload);throw new Error('Falha ao persistir agente.')}return payload}
+async function db(path,options={}){if(!SERVICE_ROLE_KEY)throw new Error('Supabase não configurado no servidor.');const response=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{...options,headers:{apikey:SERVICE_ROLE_KEY,Authorization:`Bearer ${SERVICE_ROLE_KEY}`,'Content-Type':'application/json',Prefer:options.method==='POST'?'return=representation':undefined,...(options.headers||{})}});const payload=await response.json().catch(()=>null);if(!response.ok){console.error('Supabase error',response.status,payload);throw new Error('Falha ao persistir agente.')}return payload}
 export default async function handler(req,res){
  if(req.method==='OPTIONS'){headers(res,req);return res.status(204).end()}
  if(req.method!=='POST'&&req.method!=='GET')return json(res,req,405,{error:'Método não permitido.'});
