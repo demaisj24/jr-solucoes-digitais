@@ -1,0 +1,19 @@
+{
+  "name": "VENCIVO Soluções Digitais",
+  "short_name": "VENCIVO",
+  "description": "Crie e teste seu agente de IA personalizado para atendimento.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#070910",
+  "theme_color": "#080b14",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
