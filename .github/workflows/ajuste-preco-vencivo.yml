@@ -1,0 +1,43 @@
+name: Ajuste de preço VENCIVO
+
+on:
+  push:
+    paths:
+      - '.github/workflows/ajuste-preco-vencivo.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  ajustar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Atualizar seção de preços
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          nova = '''<section id="precos"><div class="wrap"><div class="sectionHead"><h2>Valores.</h2><p>Um único plano, simples e transparente, para colocar seu agente de IA para trabalhar.</p></div><div class="pricing" style="grid-template-columns:minmax(280px,620px);justify-content:center"><article class="plan featured"><span class="eyebrow">Principal · 7 dias grátis</span><h3>Agente VENCIVO AI</h3><div class="big">R$ 59,90 <span style="font-size:14px;color:#9aa4b6;font-weight:600">/mês</span></div><ul><li>1 agente de IA personalizado</li><li>Conhecimento do seu negócio</li><li>Personalidade e comportamento configuráveis</li><li>Atendimento automatizado</li><li>Captura e qualificação de clientes</li><li>Encaminhamento para atendimento humano</li></ul><a class="btn primary" href="conta.html?acao=assinar">Assinar por R$ 59,90/mês</a></article></div></div></section>'''
+
+          padrao = r'<section id="precos">.*?</section>(?=<section id="faq">)'
+          s2, n = re.subn(padrao, nova, s, count=1, flags=re.S)
+          if n != 1:
+              raise SystemExit('Seção de preços não encontrada; nenhuma alteração feita.')
+          p.write_text(s2, encoding='utf-8')
+          print('Seção de preços atualizada.')
+          PY
+
+      - name: Publicar alteração
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m "fix: ajustar preço do agente VENCIVO para R$ 59,90" || exit 0
+          git push
