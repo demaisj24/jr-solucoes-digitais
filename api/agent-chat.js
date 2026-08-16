@@ -15,12 +15,12 @@ function history(h){if(!Array.isArray(h))return [];return h.slice(-12).map(m=>({
 function personalityConfig(agent){try{const x=JSON.parse(agent.personality||'');if(x&&typeof x==='object')return {tone:clean(x.tone,120)||'Profissional e objetivo',traits:clean(x.traits,300)||'natural, cordial, prestativo e profissional',formality:clean(x.formality,80)||'Profissional'}}catch{}return {tone:clean(agent.personality,160)||'Profissional e objetivo',traits:'natural, cordial, prestativo e profissional',formality:'Profissional'}}
 function masterPrompt(agent){
  const caps=Array.isArray(agent.capabilities)&&agent.capabilities.length?agent.capabilities.join(', '):'Responder dúvidas, apresentar serviços e encaminhar ao atendimento humano';
- const p=personalityConfig(agent);const objective=agent.objective||'Atender melhor e responder com rapidez';
+ const p=personalityConfig(agent);const objective=clean(agent.objective,200)||'Atender melhor e responder com rapidez';
  return `IDENTIDADE
-Você é ${agent.agent_name}, agente virtual oficial da ${agent.company_name}.
+Você é ${clean(agent.agent_name,100)}, agente virtual oficial da ${clean(agent.company_name,100)}.
 
 SOBRE A EMPRESA
-Segmento: ${agent.segment}.
+Segmento: ${clean(agent.segment,100)}.
 Sua função é representar a empresa no atendimento inicial aos clientes.
 
 PERSONALIDADE E TOM DE VOZ
@@ -111,11 +111,10 @@ export default async function handler(req,res){
  try{
   const b=req.body||{},id=clean(b.agent_id,80),msg=clean(b.nova_mensagem,2000),sid=clean(b.session_id,100);if(!id||!msg)return out(res,req,400,{error:'agent_id e nova_mensagem são obrigatórios.'});
   const client=ip(req);if(sid&&hit(`s:${client}:${sid}`,SESSION_LIMIT))return out(res,req,429,{error:'Este atendimento atingiu o limite temporário de mensagens.'});if(hit(`i:${client}`,IP_LIMIT))return out(res,req,429,{error:'Muitas mensagens neste acesso. Tente novamente mais tarde.'});
-  const rows=await db(`agents?public_id=eq.${encodeURIComponent(id)}&status=in.(demo,active)&select=id,public_id,company_name,agent_name,segment,system_prompt,personality,objective,capabilities,business_hours`);const agent=rows?.[0];if(!agent)return out(res,req,404,{error:'Agente não encontrado ou indisponível.'});
+  const rows=await db(`agents?public_id=eq.${encodeURIComponent(id)}&status=in.(demo,active)&select=id,public_id,company_name,agent_name,segment,personality,objective,capabilities,business_hours`);const agent=rows?.[0];if(!agent)return out(res,req,404,{error:'Agente não encontrado ou indisponível.'});
   let knowledge='';try{const k=await db(`agent_knowledge?agent_id=eq.${encodeURIComponent(agent.id)}&select=content&order=created_at.desc&limit=3`);knowledge=k.map(x=>x.content).join('\n\n').slice(0,18000)}catch{}
-  const legacy=agent.system_prompt?`\n\nCONFIGURAÇÃO ESPECÍFICA DO AGENTE:\n${clean(agent.system_prompt,12000)}`:'';
   const businessHours=agent.business_hours?`\n\nHORÁRIO OFICIAL DA EMPRESA:\n${clean(agent.business_hours,500)}`:'';
-  const system=[masterPrompt(agent),businessHours,legacy,knowledge?`\n\nBASE DE CONHECIMENTO DA EMPRESA:\n${knowledge}`:''].filter(Boolean).join('\n\n');
+  const system=[masterPrompt(agent),businessHours,knowledge?`\n\nBASE DE CONHECIMENTO DA EMPRESA:\n${knowledge}`:''].filter(Boolean).join('\n\n');
   const contents=[...history(b.historico_mensagens),{role:'user',parts:[{text:msg}]}];
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);let r;try{r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},body:JSON.stringify({system_instruction:{parts:[{text:system}]},contents,generationConfig:{maxOutputTokens:280,thinkingConfig:{thinkingLevel:'minimal'}}}),signal:controller.signal})}catch(e){if(e?.name==='AbortError')return out(res,req,504,{error:'A IA demorou para responder. Tente novamente.'});throw e}finally{clearTimeout(timer)}
   const p=await r.json().catch(()=>null);if(!r.ok){console.error('Gemini agent error',r.status,p);return out(res,req,502,{error:'Não foi possível responder agora.'})}const text=p?.candidates?.[0]?.content?.parts?.map(x=>x.text||'').join('').trim();if(!text)return out(res,req,502,{error:'A IA não retornou uma resposta válida.'});return out(res,req,200,{reply:text,agent:{id:agent.public_id,name:agent.agent_name,company:agent.company_name}});
