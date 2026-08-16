@@ -4,7 +4,6 @@ const WINDOW_MS = 60 * 60 * 1000;
 const CREATE_LIMIT = 5;
 const MAX_BODY_BYTES = 120000;
 const buckets = new Map();
-
 function origin(req){const value=String(req.headers.origin||'').trim();const allowed=new Set(['https://vencivo.com.br','https://www.vencivo.com.br','https://vencivo-ai.vercel.app','http://localhost:3000','http://localhost:5173']);return allowed.has(value)?value:'https://vencivo.com.br'}
 function headers(res,req){res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store');res.setHeader('Access-Control-Allow-Origin',origin(req));res.setHeader('Access-Control-Allow-Methods','GET,POST,OPTIONS');res.setHeader('Access-Control-Allow-Headers','Content-Type, Authorization');res.setHeader('Vary','Origin')}
 function json(res,req,status,body){headers(res,req);return res.status(status).json(body)}
@@ -32,8 +31,7 @@ export default async function handler(req,res){
   const mine=String(req.query?.mine||'')==='1';
   if(mine){if(!user)return json(res,req,401,{error:'Login necessário.'});const data=await db(`agents?owner_id=eq.${encodeURIComponent(user.id)}&select=public_id,company_name,agent_name,segment,status,created_at,updated_at&order=created_at.desc&limit=50`,{method:'GET'});return json(res,req,200,{agents:data||[]})}
   const id=clean(req.query?.id,80);if(!id)return json(res,req,400,{error:'ID do agente é obrigatório.'});
-  // Public lookup: expose only fields needed to render the public agent. Never expose contact data or internal configuration.
-  const data=await db(`agents?public_id=eq.${encodeURIComponent(id)}&select=public_id,company_name,agent_name,segment,services,business_hours,capabilities,personality,objective,status&limit=1`,{method:'GET'});if(!data?.length)return json(res,req,404,{error:'Agente não encontrado.'});
+  const data=await db(`agents?public_id=eq.${encodeURIComponent(id)}&status=in.(demo,active)&select=public_id,company_name,agent_name,segment,services,business_hours,capabilities,personality,objective,status&limit=1`,{method:'GET'});if(!data?.length)return json(res,req,404,{error:'Agente não encontrado.'});
   return json(res,req,200,{agent:data[0]});
  }catch(error){console.error('Agents API:',error);return json(res,req,500,{error:'Não foi possível processar o agente agora.'})}
 }
