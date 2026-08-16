@@ -16,9 +16,20 @@ async function apiAgents(session){
 }
 async function getAgents(){
   for(let attempt=0;attempt<6;attempt++){
-    const{data}=await supabase.auth.getSession();
-    const session=data?.session;
+    let{data}=await supabase.auth.getSession();
+    let session=data?.session;
     if(session){
+      if(attempt===0){
+        try{
+          const refreshed=await supabase.auth.refreshSession();
+          if(refreshed.data?.session){session=refreshed.data.session}else if(refreshed.error)console.warn('conta-fix refresh:',refreshed.error.message)
+        }catch(error){console.warn('conta-fix refresh:',error)}
+      }
+      try{
+        const direct=await directAgents();
+        if(direct?.length)return direct;
+        if(direct&&attempt>=2)return[];
+      }catch(error){console.error('conta-fix direct agents:',error)}
       try{
         const result=await apiAgents(session);
         if(result.ok&&result.list.length)return result.list;
@@ -30,9 +41,6 @@ async function getAgents(){
           }
         }
       }catch(error){console.error('conta-fix api agents:',error)}
-      const direct=await directAgents();
-      if(direct?.length)return direct;
-      if(direct)return[];
     }
     await wait(300+attempt*300);
   }
@@ -59,9 +67,10 @@ async function sync(){
   }finally{running=false}
 }
 setTimeout(sync,200);
-setTimeout(sync,1000);
+setTimeout(sync,1200);
 setTimeout(sync,2500);
 setTimeout(sync,5000);
+setTimeout(sync,9000);
 window.addEventListener('focus',sync);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});
 supabase.auth.onAuthStateChange(()=>setTimeout(sync,150));
