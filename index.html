@@ -50,26 +50,8 @@ section{padding:30px 0}.sectionHead{display:flex;justify-content:space-between;g
 <script>
 const WHATSAPP="5533988048788",EMAIL="demaisj@yahoo.com.br",base="https://wa.me/"+WHATSAPP;
 const $=id=>document.getElementById(id);$('year').textContent=new Date().getFullYear();$('waFloat').href=base+"?text="+encodeURIComponent("Olá! Vi o site da VENCIVO e gostaria de falar sobre um projeto.");
-const form=$('leadForm');form.addEventListener('submit',e=>{e.preventDefault();if(!form.reportValidity())return;const d=new FormData(form);const text=`Olá! Vim pelo site da VENCIVO Soluções Digitais.\
-\
-Nome: ${d.get('nome')}\
-Empresa: ${d.get('empresa')||'Não informado'}\
-WhatsApp / telefone: ${d.get('telefone')}\
-E-mail: ${d.get('email')}\
-Serviço: ${d.get('servico')}\
-\
-O que preciso:\
-${d.get('pedido')}`;window.open(base+"?text="+encodeURIComponent(text),'_blank');$('formMsg').textContent='WhatsApp aberto com sua solicitação preenchida.'});
-$('emailBtn').addEventListener('click',()=>{if(!form.reportValidity())return;const d=new FormData(form);const subject=`Orçamento - ${d.get('servico')}`;const body=`Olá! Gostaria de solicitar um orçamento à VENCIVO Soluções Digitais.\
-\
-Nome: ${d.get('nome')}\
-Empresa: ${d.get('empresa')||'Não informado'}\
-WhatsApp / telefone: ${d.get('telefone')}\
-E-mail: ${d.get('email')}\
-Serviço: ${d.get('servico')}\
-\
-Solicitação:\
-${d.get('pedido')}`;window.open('https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(EMAIL)+'&su='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body),'_blank','noopener')});
+const form=$('leadForm');form.addEventListener('submit',e=>{e.preventDefault();if(!form.reportValidity())return;const d=new FormData(form);const text=`Olá! Vim pelo site da VENCIVO Soluções Digitais.\n\nNome: ${d.get('nome')}\nEmpresa: ${d.get('empresa')||'Não informado'}\nWhatsApp / telefone: ${d.get('telefone')}\nE-mail: ${d.get('email')}\nServiço: ${d.get('servico')}\n\nO que preciso:\n${d.get('pedido')}`;window.open(base+"?text="+encodeURIComponent(text),'_blank');$('formMsg').textContent='WhatsApp aberto com sua solicitação preenchida.'});
+$('emailBtn').addEventListener('click',()=>{if(!form.reportValidity())return;const d=new FormData(form);const subject=`Orçamento - ${d.get('servico')}`;const body=`Olá! Gostaria de solicitar um orçamento à VENCIVO Soluções Digitais.\n\nNome: ${d.get('nome')}\nEmpresa: ${d.get('empresa')||'Não informado'}\nWhatsApp / telefone: ${d.get('telefone')}\nE-mail: ${d.get('email')}\nServiço: ${d.get('servico')}\n\nSolicitação:\n${d.get('pedido')}`;window.open('https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(EMAIL)+'&su='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body),'_blank','noopener')});
 let deferredPrompt=null;const installBtn=$('installBtn');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;installBtn.style.display='inline-flex'});installBtn.addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;installBtn.style.display='none'});window.addEventListener('appinstalled',()=>installBtn.style.display='none');
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 $('menuBtn').onclick=()=>{const nav=document.querySelector('.links');const open=nav.dataset.open==='1';nav.dataset.open=open?'0':'1';nav.style.display=open?'none':'flex';nav.style.position='absolute';nav.style.top='55px';nav.style.left='8px';nav.style.right='8px';nav.style.padding='12px';nav.style.flexDirection='column';nav.style.background='#080b14f7';nav.style.border='1px solid var(--l)';nav.style.borderRadius='14px'};
