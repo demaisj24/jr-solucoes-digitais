@@ -1,5 +1,5 @@
-const CACHE='vencivo-v7';
-const APP=['/','/index.html','/ia.html','/ia-v2.html','/whatsapp-config.html','/manifest.json','/icon.svg'];
+const CACHE='vencivo-v8';
+const APP=['/','/index.html','/ia.html','/ia-v2.html','/whatsapp-config.html','/conta.html','/implantacao.html','/manifest.json','/icon.svg'];
 
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(APP)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
@@ -12,15 +12,16 @@ async function networkHtml(request){
     const text=await response.text();
     let injected=text;
     if(!injected.includes('/ui-readable.js')){
-      injected=injected.replace('</body>','<script src="/ui-readable.js?v=1"></script></body>');
+      injected=injected.replace('</body>','<script src="/ui-readable.js?v=2"></script></body>');
     }
     if(path.endsWith('/ia-v2.html')||path.endsWith('/whatsapp-config.html')){
       if(!injected.includes('/implant-flow.js')){
-        injected=injected.replace('</body>','<script type="module" src="/implant-flow.js?v=6"></script></body>');
+        injected=injected.replace('</body>','<script type="module" src="/implant-flow.js?v=7"></script></body>');
       }
     }
     const headers=new Headers(response.headers);
     headers.delete('content-length');
+    headers.set('Cache-Control','no-store');
     return new Response(injected,{status:response.status,statusText:response.statusText,headers});
   }catch{return caches.match(request)}
 }
