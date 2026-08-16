@@ -1,4 +1,4 @@
-const CACHE='vencivo-v9';
+const CACHE='vencivo-v10';
 const APP=['/','/index.html','/ia.html','/ia-v2.html','/whatsapp-config.html','/conta.html','/implantacao.html','/manifest.json','/icon.svg'];
 
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(APP)).then(()=>self.skipWaiting())));
@@ -13,6 +13,9 @@ async function networkHtml(request){
     let injected=text;
     if(!injected.includes('/ui-readable.js')){
       injected=injected.replace('</body>','<script src="/ui-readable.js?v=2"></script></body>');
+    }
+    if((path.endsWith('/conta.html')||path==='/conta.html')&&!injected.includes('/conta-fix.js')){
+      injected=injected.replace('</body>','<script type="module" src="/conta-fix.js?v=1"></script></body>');
     }
     if(path.endsWith('/ia-v2.html')||path.endsWith('/whatsapp-config.html')){
       if(!injected.includes('/implant-flow.js')){
@@ -30,14 +33,11 @@ self.addEventListener('fetch',e=>{
   if(e.request.method!=='GET')return;
   const url=new URL(e.request.url);
   if(url.origin!==self.location.origin)return;
-
-  // Nunca cachear APIs: respostas de autenticação, agentes e assinatura precisam ser sempre atuais.
   if(url.pathname.startsWith('/api/')){
     e.respondWith(fetch(new Request(e.request.url,{cache:'no-store'})));
     return;
   }
-
-  if(url.pathname.endsWith('/implant-flow.js')||url.pathname.endsWith('/ui-readable.js')){
+  if(url.pathname.endsWith('/implant-flow.js')||url.pathname.endsWith('/ui-readable.js')||url.pathname.endsWith('/conta-fix.js')){
     e.respondWith(fetch(new Request(e.request.url,{cache:'no-store'})).catch(()=>caches.match(e.request)));
     return;
   }
