@@ -1,7 +1,7 @@
 const SUPABASE_URL='https://uxmlmyhiagjefuufanyg.supabase.co';
 const SUPABASE_KEY=process.env.SUPABASE_SERVICE_ROLE_KEY||'';
 const ASAAS_KEY=process.env.ASAAS_API_KEY||'';
-const ASAAS_URL=(process.env.ASAAS_API_URL||'https://api-sandbox.asaas.com/v3').replace(/\/$/,'');
+const ASAAS_URL=process.env.VERCEL_ENV==='production'?'https://api.asaas.com/v3':(process.env.ASAAS_API_URL||'https://api-sandbox.asaas.com/v3').replace(/\/$/,'');
 const SITE_URL=process.env.SITE_URL||'https://vencivo.com.br';
 function json(res,status,body){res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store');return res.status(status).json(body)}
 async function sb(path,options={}){const r=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{...options,headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`,'Content-Type':'application/json',Prefer:options.method==='POST'?'return=representation':undefined,...(options.headers||{})}});const p=await r.json().catch(()=>null);if(!r.ok)throw new Error('Falha no banco.');return p}
