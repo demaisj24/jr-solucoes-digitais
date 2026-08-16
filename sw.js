@@ -1,4 +1,4 @@
-const CACHE='vencivo-v10';
+const CACHE='vencivo-v11';
 const APP=['/','/index.html','/ia.html','/ia-v2.html','/whatsapp-config.html','/conta.html','/implantacao.html','/manifest.json','/icon.svg'];
 
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(APP)).then(()=>self.skipWaiting())));
@@ -15,7 +15,7 @@ async function networkHtml(request){
       injected=injected.replace('</body>','<script src="/ui-readable.js?v=2"></script></body>');
     }
     if((path.endsWith('/conta.html')||path==='/conta.html')&&!injected.includes('/conta-fix.js')){
-      injected=injected.replace('</body>','<script type="module" src="/conta-fix.js?v=1"></script></body>');
+      injected=injected.replace('</body>','<script type="module" src="/conta-fix.js?v=2"></script></body>');
     }
     if(path.endsWith('/ia-v2.html')||path.endsWith('/whatsapp-config.html')){
       if(!injected.includes('/implant-flow.js')){
