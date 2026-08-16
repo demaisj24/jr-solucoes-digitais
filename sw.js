@@ -1,4 +1,4 @@
-const CACHE='vencivo-v4';
+const CACHE='vencivo-v5';
 const APP=['/','/index.html','/ia.html','/ia-v2.html','/whatsapp-config.html','/manifest.json','/icon.svg'];
 
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(APP)).then(()=>self.skipWaiting())));
@@ -11,7 +11,7 @@ async function networkHtml(request){
     const path=new URL(request.url).pathname;
     if(path.endsWith('/ia-v2.html')||path.endsWith('/whatsapp-config.html')){
       const text=await response.text();
-      const injected=text.includes('/implant-flow.js')?text:text.replace('</body>','<script type="module" src="/implant-flow.js?v=4"></script></body>');
+      const injected=text.includes('/implant-flow.js')?text:text.replace('</body>','<script type="module" src="/implant-flow.js?v=5"></script></body>');
       const headers=new Headers(response.headers);
       headers.delete('content-length');
       return new Response(injected,{status:response.status,statusText:response.statusText,headers});
