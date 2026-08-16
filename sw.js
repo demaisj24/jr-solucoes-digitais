@@ -1,4 +1,4 @@
-const CACHE='vencivo-v6';
+const CACHE='vencivo-v7';
 const APP=['/','/index.html','/ia.html','/ia-v2.html','/whatsapp-config.html','/manifest.json','/icon.svg'];
 
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(APP)).then(()=>self.skipWaiting())));
@@ -9,14 +9,19 @@ async function networkHtml(request){
     const response=await fetch(request,{cache:'no-store'});
     if(!response.ok)return response;
     const path=new URL(request.url).pathname;
-    if(path.endsWith('/ia-v2.html')||path.endsWith('/whatsapp-config.html')){
-      const text=await response.text();
-      const injected=text.includes('/implant-flow.js')?text:text.replace('</body>','<script type="module" src="/implant-flow.js?v=6"></script></body>');
-      const headers=new Headers(response.headers);
-      headers.delete('content-length');
-      return new Response(injected,{status:response.status,statusText:response.statusText,headers});
+    const text=await response.text();
+    let injected=text;
+    if(!injected.includes('/ui-readable.js')){
+      injected=injected.replace('</body>','<script src="/ui-readable.js?v=1"></script></body>');
     }
-    return response;
+    if(path.endsWith('/ia-v2.html')||path.endsWith('/whatsapp-config.html')){
+      if(!injected.includes('/implant-flow.js')){
+        injected=injected.replace('</body>','<script type="module" src="/implant-flow.js?v=6"></script></body>');
+      }
+    }
+    const headers=new Headers(response.headers);
+    headers.delete('content-length');
+    return new Response(injected,{status:response.status,statusText:response.statusText,headers});
   }catch{return caches.match(request)}
 }
 
@@ -24,7 +29,7 @@ self.addEventListener('fetch',e=>{
   if(e.request.method!=='GET')return;
   const url=new URL(e.request.url);
   if(url.origin!==self.location.origin)return;
-  if(url.pathname.endsWith('/implant-flow.js')){
+  if(url.pathname.endsWith('/implant-flow.js')||url.pathname.endsWith('/ui-readable.js')){
     e.respondWith(fetch(new Request(e.request.url,{cache:'no-store'})).catch(()=>caches.match(e.request)));
     return;
   }
