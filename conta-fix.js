@@ -4,23 +4,34 @@ const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]||m));
 let running=false;
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function apiAgents(session){
+  const r=await fetch('/api/agents?mine=1',{headers:{Authorization:'Bearer '+session.access_token},cache:'no-store'});
+  const p=await r.json().catch(()=>({}));
+  if(!r.ok)return{ok:false,status:r.status,list:[]};
+  return{ok:true,status:r.status,list:Array.isArray(p.agents)?p.agents:[]};
+}
+async function directAgents(){
+  const{data,error}=await supabase.from('agents').select('public_id,company_name,agent_name,segment,status,created_at,updated_at').order('created_at',{ascending:false}).limit(50);
+  if(error)return null;
+  return Array.isArray(data)?data:[];
+}
 async function getAgents(){
   for(let attempt=0;attempt<3;attempt++){
     let session=(await supabase.auth.getSession()).data?.session;
     if(!session)return null;
-    let r=await fetch('/api/agents?mine=1',{headers:{Authorization:'Bearer '+session.access_token},cache:'no-store'});
-    if(r.ok){const p=await r.json().catch(()=>({}));return Array.isArray(p.agents)?p.agents:[]}
-    if(r.status===401){
+    let result=await apiAgents(session);
+    if(result.ok&&result.list.length)return result.list;
+    if(result.status===401){
       const refreshed=await supabase.auth.refreshSession();
       session=refreshed.data?.session;
       if(session){
-        r=await fetch('/api/agents?mine=1',{headers:{Authorization:'Bearer '+session.access_token},cache:'no-store'});
-        if(r.ok){const p=await r.json().catch(()=>({}));return Array.isArray(p.agents)?p.agents:[]}
+        result=await apiAgents(session);
+        if(result.ok&&result.list.length)return result.list;
       }
     }
     if(attempt<2)await wait(250*(attempt+1));
   }
-  return null;
+  return directAgents();
 }
 async function sync(){
   if(running)return;
