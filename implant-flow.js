@@ -66,19 +66,7 @@ function patchWhatsappActivation(){
   };
 }
 
-function patchAgentNameGuard(){
-  const originalFetch=window.fetch.bind(window);
-  window.fetch=async function(input,init={}){
-    const url=typeof input==='string'?input:(input?.url||'');
-    if(url.includes('/api/agent-chat')&&!url.includes('agent-chat-guard')){
-      input='/api/agent-chat-guard';
-    }
-    return originalFetch(input,init);
-  };
-}
-
 document.addEventListener('DOMContentLoaded',()=>{
   if(location.pathname.endsWith('/ia-v2.html'))patchBuilder();
   if(location.pathname.endsWith('/whatsapp-config.html'))patchWhatsappActivation();
-  if(location.pathname.endsWith('/ia-v2.html'))patchAgentNameGuard();
 });
