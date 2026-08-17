@@ -63,18 +63,22 @@ Enquanto a análise estiver pendente:
 - Commit de implementação: `7fcc544b4836b267a259067880997b8953d7ebb8`.
 - Vercel confirmou produção READY.
 
-### Próximo módulo
-**HOME-02 — Header e menu**
+**HOME-02 — Header e Menu**
+- Concluído e publicado em produção.
+- Header teve escala, espaçamento, contraste e legibilidade ajustados.
+- `Entrar / Minha conta` recebeu destaque visual preservando `id="authLink"` e `href="conta.html"`.
+- `Instalar app` foi reorganizado para ser a última ação dentro do menu mobile, preservando `id="installBtn"` e o comportamento PWA existente.
+- `Orçamento` permaneceu como CTA de destaque e preservou `href="#contato"`.
+- IDs, hrefs, JavaScript funcional e integrações existentes foram preservados.
+- Arquivo de aplicação alterado: `index.html`.
+- Commit de implementação: `8a9eb6ae13b8e42a155f4f55e04a6c4f09a32f6b`.
+- Commit posterior sem alteração de conteúdo: `c707c007fb2b51e723a4c76fb46145f67a906f61`.
+- Vercel confirmou produção READY para o commit mais recente.
 
-Escopo planejado:
-- aumentar e melhorar visual do menu;
-- destacar `Entrar / Minha conta`;
-- colocar `Instalar app` como última ação;
-- manter `Orçamento` em destaque;
-- preservar funcionamento e navegação existentes.
+### Próximo módulo
+**HOME-03 — organização final das ações do header**
 
 ### Fila posterior
-- HOME-03 — organização final das ações do header
 - HOME-04 — Hero, narrativa, CTAs e benefícios
 - HOME-05 — demonstração visual/animada do agente
 - HOME-06 — formulário de contato
