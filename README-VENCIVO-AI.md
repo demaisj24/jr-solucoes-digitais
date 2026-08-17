@@ -19,3 +19,5 @@ Arquitetura do MVP:
 ## Próximo passo
 
 Publicar este backend na Vercel, configurar as variáveis e apontar o frontend para a URL de produção da função `/api/chat`.
+
+<!-- deploy sync -->
