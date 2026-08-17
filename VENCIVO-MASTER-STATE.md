@@ -1,165 +1,105 @@
 # VENCIVO — MASTER STATE
 
-**Data de criação:** 17/08/2026  
-**Repositório:** `demaisj24/jr-solucoes-digitais`  
-**Branch principal:** `main`
+**Data de atualização:** 17/08/2026  
+**Repositório oficial:** `demaisj24/jr-solucoes-digitais`  
+**Branch de produção:** `main`  
+**Vercel:** `vencivo-ai`  
+**Produção:** `vencivo.com.br`
 
-> Este arquivo é a fonte resumida de estado do projeto. Ele deve ser atualizado quando uma etapa relevante for concluída, corrigida ou alterada.
+> Fonte resumida e permanente do estado do projeto. Atualizar após cada módulo relevante.
 
-## 1. Objetivo do produto
-
+## 1. Produto
 Vencivo Atendimento Inteligente / Vencivo AI é um SaaS para criação de agentes de IA personalizados para empresas.
 
-Posicionamento aprovado: não vender o produto como simples chatbot, mas como agente treinado para o negócio, com conhecimento da empresa, atendimento, qualificação e encaminhamento humano.
+Posicionamento aprovado: não vender como simples chatbot, mas como agente treinado para o negócio, com conhecimento da empresa, atendimento, qualificação e encaminhamento humano.
 
-## 2. Regra de preservação
+## 2. Componentes existentes
+- Frontend/site
+- autenticação e conta do usuário
+- agentes de IA
+- Supabase
+- Gemini
+- Asaas
+- checkout recorrente com cartão
+- Pix
+- checkout Pix avulso
+- Resend
+- domínio `vencivo.com.br`
+- preparação para WhatsApp Cloud API / Embedded Signup
+- portfólio empresarial Meta `Vencivo Atendimento Inteligente`
 
-Preservar tudo que já funciona. Antes de editar código, localizar e ler a versão efetivamente usada pela aplicação.
+## 3. Regra de preservação
+Antes de editar, localizar e ler a versão efetivamente usada pela produção.
 
-Nesta etapa, não alterar sem necessidade:
-- login;
-- cadastro;
-- sessão/autenticação;
-- Supabase;
-- Asaas;
-- checkout;
-- Gemini;
-- funcionamento atual dos agentes;
-- fluxos funcionais existentes.
+Não alterar sem necessidade durante a fase visual:
+- login
+- cadastro
+- sessão/autenticação
+- Supabase
+- Asaas
+- checkout
+- Gemini
+- funcionamento dos agentes
+- fluxos funcionais existentes
 
-## 3. Componentes já existentes
+## 4. Meta / WhatsApp
+Portfólio `Vencivo Atendimento Inteligente` sob análise/restrição da Meta em 17/08/2026.
 
-- Frontend/site do Vencivo;
-- autenticação e conta do usuário;
-- agentes de IA;
-- Supabase;
-- Gemini;
-- Asaas;
-- checkout recorrente com cartão;
-- Pix;
-- checkout Pix avulso;
-- Resend;
-- domínio `vencivo.com.br`;
-- preparação para WhatsApp Cloud API / Embedded Signup;
-- portfólio empresarial Meta `Vencivo Atendimento Inteligente`.
-
-## 4. Arquivos relevantes conhecidos
-
-- `agente.html`
-- `conta.html`
-- `conta-fix.js`
-- `ia-demo.html`
-- `ia-demo-real.html`
-- `ia-v2.html`
-- `ia-v3.html`
-- `DEPLOY-VENCIVO-AI.md`
-- `README-VENCIVO-AI.md`
-- `README-WHATSAPP-IMPLANTACAO.md`
-- `WHATSAPP-INTEGRATION-NEXT.md`
-- `NEXT-VENCIVO-AI.txt`
-- `CONTEXTO-VENCIVO-CONTINUACAO.md`
-
-## 5. Estado recente confirmado no GitHub
-
-Houve trabalho recente em:
-- estabilidade do carregamento dos agentes na conta;
-- restauração/sincronização de sessão;
-- preservação de sessão nas requisições da API do service worker;
-- checkout Asaas;
-- Pix;
-- checkout recorrente com cartão;
-- checkout Pix avulso;
-- UX da conta e mensagens de pagamento;
-- login com Enter.
-
-## 6. Meta / WhatsApp
-
-Caminho escolhido: WhatsApp Cloud API / Embedded Signup.
-
-Portfólio empresarial existente: `Vencivo Atendimento Inteligente`.
-
-Estado em 17/08/2026:
-- empresa/portfólio sofreu restrição da Meta;
-- foi solicitada análise;
-- identidade/documentação foi enviada conforme o fluxo iniciado;
-- análise da Meta está pendente;
-- ainda não foi adicionado número WhatsApp ao portfólio.
-
-Regra enquanto a análise estiver pendente:
+Enquanto a análise estiver pendente:
 - não criar outro portfólio;
-- não remover o portfólio atual;
-- não ficar repetindo convites;
-- não fazer alterações precipitadas na empresa;
-- não tentar contornar a restrição.
+- não remover o atual;
+- não repetir convites;
+- não tentar contornar a restrição;
+- não tratar a divergência Marcos/Aila como causa confirmada sem evidência da Meta.
 
-Observação: houve confusão anterior entre o nome `Aila`, o e-mail usado e a conta pessoal administradora. Isso não deve ser tratado como causa confirmada da restrição sem evidência da Meta.
+## 5. HOME — estado atual
 
-## 7. Resend / domínio
+### Concluído
+**HOME-01 — Tipografia e Hierarquia Visual**
+- Alteração visual aplicada no `index.html`.
+- Corpo, H1, lead, H2, H3, cards, textos auxiliares e mobile tiveram escala/hierarquia ajustadas.
+- Fonte atual preservada.
+- Nenhuma lógica funcional alterada.
+- Commit de implementação: `7fcc544b4836b267a259067880997b8953d7ebb8`.
+- Vercel confirmou produção READY.
 
-Resend é o serviço de e-mail do projeto.
+### Próximo módulo
+**HOME-02 — Header e menu**
 
-`vencivo.com.br` está registrado no Registro.br.
+Escopo planejado:
+- aumentar e melhorar visual do menu;
+- destacar `Entrar / Minha conta`;
+- colocar `Instalar app` como última ação;
+- manter `Orçamento` em destaque;
+- preservar funcionamento e navegação existentes.
 
-## 8. Trabalho visual atual
+### Fila posterior
+- HOME-03 — organização final das ações do header
+- HOME-04 — Hero, narrativa, CTAs e benefícios
+- HOME-05 — demonstração visual/animada do agente
+- HOME-06 — formulário de contato
+- HOME-07 — prova social visual com exemplos claramente identificados
+- HOME-08 — revisão visual final desktop/mobile
 
-A HOME está em fase de melhoria visual, preservando funcionamento.
-
-Fila conhecida:
-1. aumentar tipografia e hierarquia;
-2. melhorar header/menu;
-3. destacar `Entrar` / `Minha conta`;
-4. colocar `Instalar app` como última ação;
-5. manter `Orçamento` em destaque;
-6. remover repetição de conteúdo;
-7. reorganizar Hero com `Não contrate um chatbot. Crie um agente para o seu negócio.`;
-8. melhorar CTAs e benefícios;
-9. evoluir demonstração visual do agente;
-10. adicionar formulário de contato;
-11. adicionar prova social visual sem apresentar depoimentos fictícios como reais.
-
-## 9. Pendências de alto nível
-
-- concluir melhorias visuais da HOME;
-- resolver/retomar Meta após a análise;
-- concluir integração WhatsApp;
+## 6. Outras pendências
+- retomar Meta após análise;
+- concluir WhatsApp;
 - auditoria de segurança;
-- validação completa de autenticação e isolamento de dados;
-- teste ponta a ponta de agentes;
-- teste ponta a ponta de pagamentos;
+- validação de autenticação e isolamento de dados;
+- testes ponta a ponta de agentes;
+- testes ponta a ponta de pagamentos;
 - teste de produção;
-- preparação final para lançamento.
+- preparação para lançamento.
 
-## 10. Método de continuidade
+## 7. Método de continuidade
+O Projeto VENCIVO no ChatGPT é o ambiente de trabalho; o GitHub é a fonte técnica permanente.
 
-Toda sessão de trabalho deve ter uma missão clara e limitada.
+Cada conversa deve ter uma missão pequena. Ao concluir/interromper, atualizar o HANDOFF.
 
-Ao concluir ou interromper uma etapa, registrar um HANDOFF contendo:
-- data;
-- conversa/módulo;
-- objetivo;
-- o que foi feito;
-- o que foi testado;
-- resultado;
-- erros;
-- arquivos alterados;
-- commit/deploy;
-- pendências;
-- próximo passo exato;
-- itens que não devem ser alterados.
+Nova conversa: ler MASTER STATE + HANDOFF + contexto relevante antes de alterar qualquer coisa.
 
-Uma conversa do ChatGPT não é a memória técnica definitiva. O GitHub é a fonte técnica de verdade.
-
-## 11. Regra para novas conversas
-
-Ao abrir uma nova conversa do Projeto VENCIVO:
-
-1. consultar o estado atual do GitHub;
-2. ler este arquivo e o último HANDOFF disponível;
-3. verificar commits recentes quando necessário;
-4. identificar o último ponto concluído;
-5. continuar somente do próximo passo;
-6. não reimplementar funcionalidade já concluída sem motivo comprovado.
-
-## 12. Próximo passo operacional
-
-Antes de novas alterações no código, estabelecer e registrar o primeiro HANDOFF oficial da continuidade do Vencivo. Depois disso, trabalhar por módulos/conversas curtas.
+## 8. Documentos de continuidade
+- `CONTEXTO-VENCIVO-CONTINUACAO.md` — contexto histórico
+- `VENCIVO-MASTER-STATE.md` — estado mestre
+- `VENCIVO-HANDOFF.md` — ponto de parada
+- `VENCIVO-ROADMAP.md` — sequência operacional
