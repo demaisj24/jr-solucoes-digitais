@@ -1,4 +1,4 @@
-const CACHE='vencivo-v11';
+const CACHE='vencivo-v12';
 const APP=['/','/index.html','/ia.html','/ia-v2.html','/whatsapp-config.html','/conta.html','/implantacao.html','/manifest.json','/icon.svg'];
 
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(APP)).then(()=>self.skipWaiting())));
@@ -34,11 +34,13 @@ self.addEventListener('fetch',e=>{
   const url=new URL(e.request.url);
   if(url.origin!==self.location.origin)return;
   if(url.pathname.startsWith('/api/')){
-    e.respondWith(fetch(new Request(e.request.url,{cache:'no-store'})));
+    // Preserve the original Authorization and other request headers.
+    // Creating a new Request from only the URL drops the session token and causes 401s.
+    e.respondWith(fetch(new Request(e.request,{cache:'no-store'})));
     return;
   }
   if(url.pathname.endsWith('/implant-flow.js')||url.pathname.endsWith('/ui-readable.js')||url.pathname.endsWith('/conta-fix.js')){
-    e.respondWith(fetch(new Request(e.request.url,{cache:'no-store'})).catch(()=>caches.match(e.request)));
+    e.respondWith(fetch(new Request(e.request,{cache:'no-store'})).catch(()=>caches.match(e.request)));
     return;
   }
   if(e.request.mode==='navigate'||url.pathname.endsWith('.html')){
