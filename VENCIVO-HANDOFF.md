@@ -6,22 +6,25 @@
 **Produção:** Vercel `vencivo-ai` → `vencivo.com.br`
 
 ## Último módulo concluído
-**HOME-04 — Hero, narrativa, CTAs e benefícios**
+**HOME-05 — Demonstração visual autônoma do agente**
 
 ## Resultado
-Concluído e implementado no `index.html`.
+Concluído e implementado no `.aiCard` existente do `index.html`.
 
-O Hero recebeu a copy aprovada, reorganização da narrativa, hierarquia dos CTAs, benefícios explícitos e melhoria visual do card existente, sem animação avançada.
+A demonstração visual agora apresenta uma sequência discreta e autônoma:
+1. cliente pergunta;
+2. agente processa a solicitação;
+3. agente responde;
+4. agente qualifica/encaminha para a equipe;
+5. ciclo reinicia automaticamente.
 
-Copy aplicada:
-- eyebrow: `VENCIVO AI · agente de IA para seu negócio`
-- H1: `Não contrate um chatbot. Crie um agente para o seu negócio.`
-- lead: `Seu agente conhece o seu negócio, atende seus clientes 24 horas por dia, qualifica oportunidades e encaminha para sua equipe quando necessário.`
-- CTA principal: `Criar meu agente de IA →`
-- CTA secundário: `Ver como funciona`
-- benefícios: `Conhece seu negócio`, `Atendimento 24h`, `Qualifica clientes`, `Encaminha para sua equipe`
+A animação usa prioritariamente CSS e `@keyframes`, sem API, Gemini, Supabase ou JavaScript novo.
 
-O CTA principal continuou apontando para `ia.html` e o CTA secundário continuou apontando para `#ia`.
+## Acessibilidade e responsividade
+- `prefers-reduced-motion: reduce` implementado.
+- Nesse modo, a demonstração fica estática e sem animação contínua.
+- Estrutura responsiva existente foi preservada.
+- Não foi criada nova seção nem novo componente fora do `.aiCard` existente.
 
 ## Preservação funcional
 - `id="authLink"` preservado.
@@ -29,27 +32,40 @@ O CTA principal continuou apontando para `ia.html` e o CTA secundário continuou
 - `id="installBtn"` preservado.
 - `id="menuBtn"` preservado.
 - `href="#contato"` do CTA `Orçamento` preservado.
+- CTA principal `href="ia.html"` preservado.
+- CTA secundário `href="#ia"` preservado.
 - JavaScript existente preservado.
 - Lógica de autenticação/Supabase preservada.
 - Asaas preservado.
 - Gemini preservado.
 - PWA/service worker preservado.
 - Integrações existentes preservadas.
-- HOME-05 não executado.
+- HOME-06 não executado.
 
 ## Arquivo de aplicação alterado
 `index.html`
 
 ## Commit de implementação
-`431860472879363c59e295e348b3c580afba8c12`
+`55b5f6dc09820585a20813cfb98c2f452ebbf7e4`
 
 ## Documentação
-MASTER STATE atualizado para registrar HOME-04 como concluído.
+MASTER STATE e ROADMAP foram atualizados para registrar HOME-05 como concluído e HOME-06 como próximo módulo.
+
+## Testes
+- Estrutura do `index.html` conferida após a implementação.
+- Classes e keyframes da demonstração conferidos.
+- `prefers-reduced-motion` conferido.
+- IDs, hrefs e scripts funcionais protegidos conferidos.
+- Breakpoints existentes de desktop/mobile conferidos por inspeção do CSS.
+- Limitação: navegador automatizado/screenshot desktop-mobile não estava disponível neste ambiente; confirmação visual final em navegador real permanece recomendada.
+
+## Deploy
+A integração GitHub → Vercel do projeto `vencivo-ai` foi conferida. O commit de implementação do HOME-05 foi publicado na `main`; a confirmação do deployment específico do commit deve ser registrada assim que o Vercel concluir a sincronização.
 
 ## Próximo passo exato
-**HOME-05 — demonstração visual/animada do agente.**
+**HOME-06 — formulário de contato.**
 
-HOME-05 permanece separado do HOME-04 e não foi executado nesta sessão.
+HOME-06 não deve ser executado nesta sessão além do que já existe no código atual; o módulo futuro deverá ser tratado separadamente.
 
 ## Itens que não devem ser alterados nesta fase
 - login
@@ -62,4 +78,6 @@ HOME-05 permanece separado do HOME-04 e não foi executado nesta sessão.
 - funcionamento atual dos agentes
 - WhatsApp/Meta enquanto a análise estiver pendente
 - PWA/service worker
+- header
+- CTAs existentes
 - qualquer integração funcional existente
