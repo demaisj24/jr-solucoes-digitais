@@ -29,7 +29,7 @@ O GitHub é a fonte técnica de verdade. O Projeto VENCIVO no ChatGPT é o ambie
 - [x] HOME-01 — Tipografia e hierarquia visual
 - [x] HOME-02 — Header e menu
 - [x] HOME-03 — Entrar / Minha conta / Instalar app / Orçamento
-- [ ] HOME-04 — Hero, narrativa, CTAs e benefícios
+- [x] HOME-04 — Hero, narrativa, CTAs e benefícios
 - [ ] HOME-05 — Demonstração visual/animada do agente
 - [ ] HOME-06 — Formulário de contato
 - [ ] HOME-07 — Prova social visual com exemplos claramente identificados
@@ -76,7 +76,9 @@ HOME-02 foi concluído e publicado em produção no commit `8a9eb6ae13b8e42a155f
 
 HOME-03 foi concluído e publicado em produção no commit `690ea13d9c9ee8e4ad3e4045aff2be8a6247a682`. A alteração foi restrita ao CSS do header, com separação visual de `Entrar / Minha conta` em desktop e mobile, mantendo `Instalar app` como última ação do menu mobile e `Orçamento` como CTA principal independente. IDs, hrefs, JavaScript, PWA, autenticação e integrações foram preservados.
 
-Próximo módulo: **HOME-04 — Hero, narrativa, CTAs e benefícios**.
+HOME-04 foi concluído e implementado no commit `431860472879363c59e295e348b3c580afba8c12`. O Hero recebeu a copy aprovada, CTAs, benefícios e melhoria visual do card existente, sem animação avançada. A lógica funcional, IDs, hrefs, JavaScript, autenticação, Supabase, Asaas, Gemini, PWA e integrações foram preservados.
+
+Próximo módulo: **HOME-05 — Demonstração visual/animada do agente**.
 
 ## Regra de execução dos módulos
 
