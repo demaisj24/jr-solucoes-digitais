@@ -102,15 +102,27 @@ Enquanto a análise estiver pendente:
 - Card existente recebeu melhoria visual de contraste, profundidade, hierarquia e acabamento, sem animação avançada.
 - CTA principal preservou `href="ia.html"`; CTA secundário preservou `href="#ia"`.
 - IDs, JavaScript, autenticação, Supabase, Asaas, Gemini, PWA/service worker e integrações foram preservados.
-- Não houve execução do HOME-05.
 - Commit de implementação: `431860472879363c59e295e348b3c580afba8c12`.
-- Validação estrutural pós-commit deve confirmar preservação dos elementos funcionais protegidos e o diff restrito ao HOME-04 + documentação de estado.
+
+**HOME-05 — Demonstração visual autônoma do agente**
+- Concluído e implementado no `.aiCard` existente do `index.html`.
+- Não foi criado novo componente nem nova seção.
+- A demonstração segue a sequência visual: cliente pergunta → processamento → resposta → qualificação/encaminhamento → reinício.
+- Implementação prioritariamente em CSS com `@keyframes`; nenhum JavaScript novo foi adicionado.
+- Não utiliza API, Gemini, Supabase ou qualquer integração funcional para a animação.
+- `prefers-reduced-motion: reduce` foi incluído; nesse modo a demonstração fica estática, sem animação contínua.
+- Layout, header, autenticação, PWA, CTAs e integrações existentes foram preservados.
+- O JavaScript existente permaneceu inalterado.
+- Arquivo de aplicação alterado: `index.html`.
+- Commit de implementação: `55b5f6dc09820585a20813cfb98c2f452ebbf7e4`.
+- Diff do HOME-05 ficou restrito ao `index.html` em relação ao commit de implementação do HOME-04; não foram alterados arquivos funcionais de backend ou integração.
+- Teste estrutural: classes, keyframes, `prefers-reduced-motion`, IDs protegidos, CTAs e scripts existentes foram conferidos após a implementação.
+- Limitação de teste visual: não foi possível executar navegador automatizado/screenshot desktop-mobile neste ambiente; a validação responsiva foi feita por inspeção do CSS e dos breakpoints existentes. A confirmação visual final em navegador real permanece recomendada.
 
 ### Próximo módulo
-**HOME-05 — demonstração visual/animada do agente**
+**HOME-06 — formulário de contato**
 
 ### Fila posterior
-- HOME-06 — formulário de contato
 - HOME-07 — prova social visual com exemplos claramente identificados
 - HOME-08 — revisão visual final desktop/mobile
 
