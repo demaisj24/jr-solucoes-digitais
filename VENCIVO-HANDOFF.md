@@ -49,18 +49,26 @@ A animação usa prioritariamente CSS e `@keyframes`, sem API, Gemini, Supabase 
 `55b5f6dc09820585a20813cfb98c2f452ebbf7e4`
 
 ## Documentação
-MASTER STATE e ROADMAP foram atualizados para registrar HOME-05 como concluído e HOME-06 como próximo módulo.
+- MASTER STATE atualizado no commit `54fc085194e162372de0fbac058e5edf190a912d`.
+- HANDOFF atualizado neste registro.
+- ROADMAP atualizado no commit `df5ac2166680e2f00f4a61a2bea7c4fb5acfe81e`.
 
 ## Testes
 - Estrutura do `index.html` conferida após a implementação.
 - Classes e keyframes da demonstração conferidos.
 - `prefers-reduced-motion` conferido.
 - IDs, hrefs e scripts funcionais protegidos conferidos.
-- Breakpoints existentes de desktop/mobile conferidos por inspeção do CSS.
-- Limitação: navegador automatizado/screenshot desktop-mobile não estava disponível neste ambiente; confirmação visual final em navegador real permanece recomendada.
+- Produção respondeu HTTP 200 no `www.vencivo.com.br` após o redirect canônico do domínio.
+- Deployment de produção Vercel `vencivo-ai` confirmado como `READY`, associado ao fluxo GitHub `main` e ao commit de documentação `1afa483df1bbfb962fae8923c6b2d295a0f7ff00`, contendo o HOME-05 já publicado.
+- Deployment confirmado: `dpl_EnD69S6ymTY3BD3K6A11PzbJH2qD`.
+- URL do deployment: `vencivo-8104i9p4u-demaisj-7649s-projects.vercel.app`.
+- Aliases de produção confirmados: `vencivo.com.br` e `www.vencivo.com.br`.
+- Limitação: navegador automatizado/screenshot desktop-mobile não estava disponível neste ambiente; a responsividade foi conferida por inspeção dos breakpoints e do CSS existente. Confirmação visual final em navegador real permanece recomendada.
 
 ## Deploy
-A integração GitHub → Vercel do projeto `vencivo-ai` foi conferida. O commit de implementação do HOME-05 foi publicado na `main`; a confirmação do deployment específico do commit deve ser registrada assim que o Vercel concluir a sincronização.
+GitHub → Vercel → produção confirmado como `READY`.
+
+O conteúdo publicado em produção foi conferido diretamente e contém o novo `.aiCard`, os `@keyframes`, a sequência cliente → processamento → resposta → qualificação/encaminhamento e o bloco `prefers-reduced-motion`.
 
 ## Próximo passo exato
 **HOME-06 — formulário de contato.**
