@@ -6,35 +6,43 @@
 **Produção:** Vercel `vencivo-ai` → `vencivo.com.br`
 
 ## Último módulo concluído
-**HOME-01 — Tipografia e Hierarquia Visual**
+**HOME-02 — Header e Menu**
 
 ## Resultado
 Concluído e publicado em produção.
 
-A alteração foi restrita ao CSS/visual do `index.html`. Não houve alteração de lógica funcional, autenticação, Supabase, Gemini, Asaas, WhatsApp, formulário, PWA ou JavaScript funcional.
+O trabalho foi restrito ao header/menu da HOME: escala, espaçamento, contraste, legibilidade e organização estrutural das ações existentes. `Entrar / Minha conta` recebeu destaque visual; `Instalar app` passou a ser a última ação do menu mobile; `Orçamento` permaneceu em destaque.
 
-## Commit
-`7fcc544b4836b267a259067880997b8953d7ebb8`
+Não foram alteradas autenticação, Supabase, Asaas, checkout, Gemini, funcionamento dos agentes, WhatsApp/Meta, PWA/service worker ou os fluxos funcionais existentes.
 
-## Próximo módulo autorizado
-**HOME-02 — Header e Menu**
+## Arquivo de aplicação alterado
+`index.html`
 
-### Escopo de HOME-02
-- melhorar visual e legibilidade do header;
-- ajustar escala do menu;
-- destacar `Entrar / Minha conta`;
-- colocar `Instalar app` como última ação do menu;
-- manter `Orçamento` com destaque;
-- preservar links, navegação e lógica existentes.
+## Commits
+Implementação visual:
+`8a9eb6ae13b8e42a155f4f55e04a6c4f09a32f6b`
 
-## Antes de executar HOME-02
-1. Ler `VENCIVO-MASTER-STATE.md`.
-2. Ler este HANDOFF.
-3. Localizar e ler o arquivo efetivamente usado pela HOME em produção.
-4. Confirmar que o escopo é somente visual.
-5. Não alterar lógica funcional.
+Registro posterior sem alteração de conteúdo da aplicação:
+`c707c007fb2b51e723a4c76fb46145f67a906f61`
 
-## Itens protegidos nesta fase
+## Testes e confirmação
+- Estrutura do header conferida no `index.html` após a implementação.
+- IDs preservados: `authLink`, `installBtn`, `menuBtn`.
+- Hrefs preservados: `conta.html`, `#contato` e os destinos existentes do menu.
+- JavaScript existente conferido e mantido.
+- Supabase/auth e PWA não foram reimplementados nem modificados.
+- Comparação do commit de implementação confirmou alteração concentrada no header/CSS e organização do menu.
+- Vercel confirmou deployment de produção `READY` associado ao commit mais recente `c707c007fb2b51e723a4c76fb46145f67a906f61`.
+
+## Observação de validação visual
+O deployment de produção está protegido por SSO no endpoint de preview da Vercel, portanto a validação automatizada confirmou o deployment `READY` e o código publicado, mas não foi feita inspeção visual interativa autenticada do domínio nesta sessão.
+
+## Próximo passo exato
+**Parar após HOME-02. Não executar HOME-03 nesta sessão.**
+
+Quando uma nova sessão for iniciada, o próximo módulo autorizado será **HOME-03 — organização final das ações do header**, após nova leitura do MASTER STATE + HANDOFF.
+
+## Itens que não devem ser alterados nesta fase
 - login
 - cadastro
 - sessão/autenticação
@@ -43,8 +51,6 @@ A alteração foi restrita ao CSS/visual do `index.html`. Não houve alteração
 - checkout
 - Gemini
 - funcionamento atual dos agentes
-- fluxos funcionais existentes
-- Meta/WhatsApp enquanto a análise da Meta estiver pendente
-
-## Regra de encerramento
-Após HOME-02, registrar resultado, testes, arquivos alterados, commit/deploy e próximo módulo antes de continuar.
+- WhatsApp/Meta enquanto a análise estiver pendente
+- PWA/service worker
+- qualquer integração funcional existente
