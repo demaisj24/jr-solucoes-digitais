@@ -75,11 +75,25 @@ Enquanto a análise estiver pendente:
 - Commit posterior sem alteração de conteúdo: `c707c007fb2b51e723a4c76fb46145f67a906f61`.
 - Vercel confirmou produção READY para o commit mais recente.
 
+**HOME-03 — Organização final das ações do header**
+- Concluído e publicado em produção.
+- Alteração restrita ao CSS do `index.html`.
+- Desktop: `Entrar / Minha conta` recebeu separação visual da navegação por espaçamento e divisor vertical, mantendo `Orçamento` como CTA principal independente.
+- Mobile: `Entrar / Minha conta` recebeu separação visual da navegação por margem, divisor horizontal e agrupamento das ações; `Instalar app` permaneceu como última ação do menu.
+- `Orçamento` permaneceu fora do menu e preservou `href="#contato"`.
+- IDs preservados: `authLink`, `installBtn`, `menuBtn`.
+- Hrefs preservados: `conta.html`, `#contato` e destinos existentes do menu.
+- JavaScript, Supabase/auth, PWA/service worker e demais integrações não foram alterados.
+- Diff confirmado: somente `index.html`, 2 linhas adicionadas e 2 removidas, todas no CSS responsivo do header.
+- Commit de implementação: `690ea13d9c9ee8e4ad3e4045aff2be8a6247a682`.
+- Vercel confirmou deployment de produção `READY` associado ao commit `690ea13d9c9ee8e4ad3e4045aff2be8a6247a682`.
+- Endpoint do deployment respondeu HTTP 200.
+- Validação responsiva desktop/mobile foi conferida no CSS pelos breakpoints existentes (`>900px` e `<=900px`), com verificação específica da hierarquia de `authLink`, `installBtn`, `menuBtn` e `Orçamento`.
+
 ### Próximo módulo
-**HOME-03 — organização final das ações do header**
+**HOME-04 — Hero, narrativa, CTAs e benefícios**
 
 ### Fila posterior
-- HOME-04 — Hero, narrativa, CTAs e benefícios
 - HOME-05 — demonstração visual/animada do agente
 - HOME-06 — formulário de contato
 - HOME-07 — prova social visual com exemplos claramente identificados
