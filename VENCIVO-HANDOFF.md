@@ -6,41 +6,54 @@
 **Produção:** Vercel `vencivo-ai` → `vencivo.com.br`
 
 ## Último módulo concluído
-**HOME-02 — Header e Menu**
+**HOME-03 — Organização final das ações do header**
 
 ## Resultado
 Concluído e publicado em produção.
 
-O trabalho foi restrito ao header/menu da HOME: escala, espaçamento, contraste, legibilidade e organização estrutural das ações existentes. `Entrar / Minha conta` recebeu destaque visual; `Instalar app` passou a ser a última ação do menu mobile; `Orçamento` permaneceu em destaque.
+O trabalho foi restrito à organização visual final das ações existentes no header da HOME. No desktop, `Entrar / Minha conta` foi visualmente separado da navegação por espaçamento e divisor vertical, mantendo `Orçamento` como CTA principal independente. No mobile, `Entrar / Minha conta` foi separado visualmente da navegação e `Instalar app` permaneceu como última ação do menu. `Orçamento` permaneceu fora do menu e em destaque.
 
-Não foram alteradas autenticação, Supabase, Asaas, checkout, Gemini, funcionamento dos agentes, WhatsApp/Meta, PWA/service worker ou os fluxos funcionais existentes.
+Não foram alterados autenticação, Supabase, Asaas, checkout, Gemini, funcionamento dos agentes, WhatsApp/Meta, PWA/service worker ou os fluxos funcionais existentes.
 
 ## Arquivo de aplicação alterado
 `index.html`
 
-## Commits
+## Commit
 Implementação visual:
-`8a9eb6ae13b8e42a155f4f55e04a6c4f09a32f6b`
+`690ea13d9c9ee8e4ad3e4045aff2be8a6247a682`
 
-Registro posterior sem alteração de conteúdo da aplicação:
-`c707c007fb2b51e723a4c76fb46145f67a906f61`
+## Diff confirmado
+Comparação com o estado imediatamente anterior (`4e83190c0fa15d3504e184395f5e7061edc6181a`) confirmou:
+- 1 arquivo alterado: `index.html`;
+- 2 linhas adicionadas;
+- 2 linhas removidas;
+- alterações exclusivamente no CSS do header/responsividade;
+- nenhuma alteração no HTML estrutural, JavaScript ou integrações.
+
+## Preservação funcional
+- `id="authLink"` preservado.
+- `href="conta.html"` preservado.
+- `id="installBtn"` preservado.
+- `id="menuBtn"` preservado.
+- `href="#contato"` do CTA `Orçamento` preservado.
+- JavaScript existente preservado.
+- Lógica de autenticação/Supabase preservada.
+- Lógica PWA/service worker preservada.
 
 ## Testes e confirmação
-- Estrutura do header conferida no `index.html` após a implementação.
-- IDs preservados: `authLink`, `installBtn`, `menuBtn`.
-- Hrefs preservados: `conta.html`, `#contato` e os destinos existentes do menu.
-- JavaScript existente conferido e mantido.
-- Supabase/auth e PWA não foram reimplementados nem modificados.
-- Comparação do commit de implementação confirmou alteração concentrada no header/CSS e organização do menu.
-- Vercel confirmou deployment de produção `READY` associado ao commit mais recente `c707c007fb2b51e723a4c76fb46145f67a906f61`.
+- Produção Vercel confirmou deployment `READY` para o commit `690ea13d9c9ee8e4ad3e4045aff2be8a6247a682`.
+- Endpoint do deployment respondeu HTTP 200.
+- Desktop: regra visual de separação de `authLink` foi verificada no CSS aplicado; `Orçamento` continua independente e `Instalar app` permanece oculto no desktop.
+- Mobile: breakpoint `max-width:900px` foi verificado; `authLink` passa para ação destacada com divisor superior, `installBtn` permanece depois dele e `menuBtn` continua sendo o acionador do menu.
+- A validação responsiva foi feita por inspeção do CSS e da estrutura publicada; não houve inspeção visual interativa autenticada do domínio.
 
-## Observação de validação visual
-O deployment de produção está protegido por SSO no endpoint de preview da Vercel, portanto a validação automatizada confirmou o deployment `READY` e o código publicado, mas não foi feita inspeção visual interativa autenticada do domínio nesta sessão.
+## Observação
+O endpoint de produção está publicado e respondeu corretamente, mas esta sessão não dispõe de navegador interativo autenticado para captura visual real do domínio. A validação desktop/mobile registrada acima é estrutural/responsiva, baseada no CSS publicado e no comportamento definido pelos breakpoints.
 
 ## Próximo passo exato
-**Parar após HOME-02. Não executar HOME-03 nesta sessão.**
+**HOME-04 — Hero, narrativa, CTAs e benefícios.**
 
-Quando uma nova sessão for iniciada, o próximo módulo autorizado será **HOME-03 — organização final das ações do header**, após nova leitura do MASTER STATE + HANDOFF.
+Não executar HOME-04 nesta sessão.
 
 ## Itens que não devem ser alterados nesta fase
 - login
