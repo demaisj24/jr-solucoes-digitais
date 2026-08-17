@@ -90,11 +90,26 @@ Enquanto a análise estiver pendente:
 - Endpoint do deployment respondeu HTTP 200.
 - Validação responsiva desktop/mobile foi conferida no CSS pelos breakpoints existentes (`>900px` e `<=900px`), com verificação específica da hierarquia de `authLink`, `installBtn`, `menuBtn` e `Orçamento`.
 
-### Próximo módulo
 **HOME-04 — Hero, narrativa, CTAs e benefícios**
+- Concluído e implementado no `index.html`.
+- Copy aprovada aplicada exatamente:
+  - eyebrow: `VENCIVO AI · agente de IA para seu negócio`
+  - H1: `Não contrate um chatbot. Crie um agente para o seu negócio.`
+  - lead: `Seu agente conhece o seu negócio, atende seus clientes 24 horas por dia, qualifica oportunidades e encaminha para sua equipe quando necessário.`
+  - CTA principal: `Criar meu agente de IA →`
+  - CTA secundário: `Ver como funciona`
+  - benefícios: `Conhece seu negócio`, `Atendimento 24h`, `Qualifica clientes`, `Encaminha para sua equipe`
+- Card existente recebeu melhoria visual de contraste, profundidade, hierarquia e acabamento, sem animação avançada.
+- CTA principal preservou `href="ia.html"`; CTA secundário preservou `href="#ia"`.
+- IDs, JavaScript, autenticação, Supabase, Asaas, Gemini, PWA/service worker e integrações foram preservados.
+- Não houve execução do HOME-05.
+- Commit de implementação: `431860472879363c59e295e348b3c580afba8c12`.
+- Validação estrutural pós-commit deve confirmar preservação dos elementos funcionais protegidos e o diff restrito ao HOME-04 + documentação de estado.
+
+### Próximo módulo
+**HOME-05 — demonstração visual/animada do agente**
 
 ### Fila posterior
-- HOME-05 — demonstração visual/animada do agente
 - HOME-06 — formulário de contato
 - HOME-07 — prova social visual com exemplos claramente identificados
 - HOME-08 — revisão visual final desktop/mobile
