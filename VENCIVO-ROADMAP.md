@@ -30,7 +30,7 @@ O GitHub é a fonte técnica de verdade. O Projeto VENCIVO no ChatGPT é o ambie
 - [x] HOME-02 — Header e menu
 - [x] HOME-03 — Entrar / Minha conta / Instalar app / Orçamento
 - [x] HOME-04 — Hero, narrativa, CTAs e benefícios
-- [ ] HOME-05 — Demonstração visual/animada do agente
+- [x] HOME-05 — Demonstração visual/animada do agente
 - [ ] HOME-06 — Formulário de contato
 - [ ] HOME-07 — Prova social visual com exemplos claramente identificados
 - [ ] HOME-08 — Revisão visual final desktop/mobile
@@ -78,7 +78,11 @@ HOME-03 foi concluído e publicado em produção no commit `690ea13d9c9ee8e4ad3e
 
 HOME-04 foi concluído e implementado no commit `431860472879363c59e295e348b3c580afba8c12`. O Hero recebeu a copy aprovada, CTAs, benefícios e melhoria visual do card existente, sem animação avançada. A lógica funcional, IDs, hrefs, JavaScript, autenticação, Supabase, Asaas, Gemini, PWA e integrações foram preservados.
 
-Próximo módulo: **HOME-05 — Demonstração visual/animada do agente**.
+HOME-05 foi concluído no commit `55b5f6dc09820585a20813cfb98c2f452ebbf7e4`. A alteração ficou restrita ao `.aiCard` existente do `index.html`, usando CSS/keyframes para demonstrar cliente → processamento → resposta → qualificação/encaminhamento → reinício. Foi incluído `prefers-reduced-motion`; nenhum JavaScript novo, API, Gemini, Supabase ou integração funcional foi introduzido. Header, autenticação, PWA, CTAs e integrações foram preservados.
+
+Limitação registrada: navegador automatizado/screenshot desktop-mobile não estava disponível neste ambiente; a responsividade foi conferida por inspeção dos breakpoints e do CSS existente. A confirmação visual final em navegador real permanece recomendada.
+
+Próximo módulo: **HOME-06 — Formulário de contato**.
 
 ## Regra de execução dos módulos
 
