@@ -63,7 +63,7 @@ if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.ser
 $('menuBtn').onclick=()=>{const nav=document.querySelector('.links');const open=nav.dataset.open==='1';nav.dataset.open=open?'0':'1';nav.style.display=open?'none':'flex';nav.style.position='absolute';nav.style.top='55px';nav.style.left='8px';nav.style.right='8px';nav.style.padding='12px';nav.style.flexDirection='column';nav.style.background='#080b14f7';nav.style.border='1px solid var(--l)';nav.style.borderRadius='14px'};
 document.querySelectorAll('.links a').forEach(a=>a.addEventListener('click',()=>{if(innerWidth<=900)document.querySelector('.links').style.display='none'}));
 </script>
-<script src="service-previews.js"></script>
+<script src="service-previews-v2.js"></script>
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 const supabase=createClient('https://uxmlmyhiagjefuufanyg.supabase.co','sb_publishable_wAajSubj-zZE7kFh7EAxog_2FxCrs6Z',{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}});
