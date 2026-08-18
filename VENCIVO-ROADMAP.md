@@ -1,17 +1,15 @@
 # VENCIVO — ROADMAP OPERACIONAL
 
-Data: 17/08/2026
+Data: 18/08/2026
 Repositório oficial: `demaisj24/jr-solucoes-digitais`
 Branch de produção: `main`
 Vercel: `vencivo-ai`
 Domínio: `vencivo.com.br`
 
 ## Objetivo
-
-Organizar o desenvolvimento do VENCIVO em módulos curtos, independentes e rastreáveis, evitando que uma conversa do ChatGPT seja usada como memória técnica do projeto.
+Organizar o desenvolvimento do VENCIVO em módulos curtos, independentes e rastreáveis.
 
 ## Regra central
-
 O GitHub é a fonte técnica de verdade. O Projeto VENCIVO no ChatGPT é o ambiente de trabalho. Cada conversa deve ter uma missão limitada. Ao terminar ou interromper uma missão, registrar um HANDOFF.
 
 ## Ordem operacional
@@ -31,7 +29,7 @@ O GitHub é a fonte técnica de verdade. O Projeto VENCIVO no ChatGPT é o ambie
 - [x] HOME-03 — Entrar / Minha conta / Instalar app / Orçamento
 - [x] HOME-04 — Hero, narrativa, CTAs e benefícios
 - [x] HOME-05 — Demonstração visual/animada do agente
-- [ ] HOME-06 — Formulário de contato
+- [x] HOME-06 — Finalização visual e formulário preservado
 - [ ] HOME-07 — Prova social visual com exemplos claramente identificados
 - [ ] HOME-08 — Revisão visual final desktop/mobile
 
@@ -70,22 +68,15 @@ O GitHub é a fonte técnica de verdade. O Projeto VENCIVO no ChatGPT é o ambie
 
 ## Status atual
 
-HOME-01 foi concluído e publicado em produção no commit `7fcc544b4836b267a259067880997b8953d7ebb8`. A alteração foi visual/CSS, sem mudança de lógica funcional.
+HOME-01 a HOME-05 permanecem concluídos e publicados.
 
-HOME-02 foi concluído e publicado em produção no commit `8a9eb6ae13b8e42a155f4f55e04a6c4f09a32f6b`, com registro posterior `c707c007fb2b51e723a4c76fb46145f67a906f61` sem alteração de conteúdo da aplicação.
+HOME-06 foi finalizado visualmente nesta sessão. A alteração ficou restrita ao `index.html`: H1 do Hero em duas linhas e remoção da seção redundante `#ia`. O formulário e suas integrações foram preservados.
 
-HOME-03 foi concluído e publicado em produção no commit `690ea13d9c9ee8e4ad3e4045aff2be8a6247a682`. A alteração foi restrita ao CSS do header, com separação visual de `Entrar / Minha conta` em desktop e mobile, mantendo `Instalar app` como última ação do menu mobile e `Orçamento` como CTA principal independente. IDs, hrefs, JavaScript, PWA, autenticação e integrações foram preservados.
+Commit de produção do HOME-06: `aa5801ce53cf49f3a896448e6988b8785a6f4937`.
 
-HOME-04 foi concluído e implementado no commit `431860472879363c59e295e348b3c580afba8c12`. O Hero recebeu a copy aprovada, CTAs, benefícios e melhoria visual do card existente, sem animação avançada. A lógica funcional, IDs, hrefs, JavaScript, autenticação, Supabase, Asaas, Gemini, PWA e integrações foram preservados.
-
-HOME-05 foi concluído no commit `55b5f6dc09820585a20813cfb98c2f452ebbf7e4`. A alteração ficou restrita ao `.aiCard` existente do `index.html`, usando CSS/keyframes para demonstrar cliente → processamento → resposta → qualificação/encaminhamento → reinício. Foi incluído `prefers-reduced-motion`; nenhum JavaScript novo, API, Gemini, Supabase ou integração funcional foi introduzido. Header, autenticação, PWA, CTAs e integrações foram preservados.
-
-Limitação registrada: navegador automatizado/screenshot desktop-mobile não estava disponível neste ambiente; a responsividade foi conferida por inspeção dos breakpoints e do CSS existente. A confirmação visual final em navegador real permanece recomendada.
-
-Próximo módulo: **HOME-06 — Formulário de contato**.
+Deployment Vercel de produção: `dpl_EZ2qNJfipcZnqfzd1CSSocipmaWV`, estado `READY`.
 
 ## Regra de execução dos módulos
-
 Para cada módulo:
 1. Ler MASTER STATE + HANDOFF + arquivo relevante.
 2. Confirmar o arquivo efetivamente usado pela produção.
@@ -97,5 +88,4 @@ Para cada módulo:
 8. Só então iniciar o módulo seguinte.
 
 ## Regra de conversa
-
-Não criar uma conversa gigante para várias fases. Usar uma conversa por módulo ou por tarefa pequena. Os nomes visuais das conversas podem ser renomeados manualmente no ChatGPT; o estado oficial, porém, permanece no GitHub.
+Não criar uma conversa gigante para várias fases. Usar uma conversa por módulo ou por tarefa pequena. O estado oficial permanece no GitHub.
