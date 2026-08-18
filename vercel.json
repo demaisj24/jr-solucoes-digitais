@@ -5,6 +5,8 @@
     "api/agents.js": {"maxDuration": 20},
     "api/asaas-checkout.js": {"maxDuration": 20},
     "api/subscription-cancel.js": {"maxDuration": 20},
-    "api/webhooks/asaas.js": {"maxDuration": 20}
+    "api/webhooks/asaas.js": {"maxDuration": 20},
+    "api/instagram-login.js": {"maxDuration": 10},
+    "api/instagram-callback.js": {"maxDuration": 20}
   }
 }
