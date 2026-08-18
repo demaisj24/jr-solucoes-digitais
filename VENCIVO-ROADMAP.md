@@ -30,7 +30,7 @@ O GitHub é a fonte técnica de verdade. O Projeto VENCIVO no ChatGPT é o ambie
 - [x] HOME-04 — Hero, narrativa, CTAs e benefícios
 - [x] HOME-05 — Demonstração visual/animada do agente
 - [x] HOME-06 — Finalização visual e formulário preservado
-- [ ] HOME-07 — Prova social visual com exemplos claramente identificados
+- [x] HOME-07 — Prova social visual com exemplos claramente identificados
 - [ ] HOME-08 — Revisão visual final desktop/mobile
 
 ### Fase C — Integrações
@@ -68,13 +68,13 @@ O GitHub é a fonte técnica de verdade. O Projeto VENCIVO no ChatGPT é o ambie
 
 ## Status atual
 
-HOME-01 a HOME-05 permanecem concluídos e publicados.
+HOME-01 a HOME-06 permanecem concluídos e publicados.
 
-HOME-06 foi finalizado visualmente nesta sessão. A alteração ficou restrita ao `index.html`: H1 do Hero em duas linhas e remoção da seção redundante `#ia`. O formulário e suas integrações foram preservados.
+HOME-07 foi concluído e publicado. A alteração ficou restrita ao `index.html`: foi adicionada uma seção de prova social demonstrativa após o Hero/demonstração do agente, com exemplos claramente identificados para Clínica, Imobiliária e Prestadora de serviços. Nenhum cliente, depoimento ou métrica foi inventado. As integrações e comportamentos existentes foram preservados.
 
-Commit de produção do HOME-06: `aa5801ce53cf49f3a896448e6988b8785a6f4937`.
+Commit de merge do HOME-07: `c4f183ab8f1b6a4c31fb4ef858b7729eb79d8506`.
 
-Deployment Vercel de produção: `dpl_EZ2qNJfipcZnqfzd1CSSocipmaWV`, estado `READY`.
+Deployment Vercel de produção: `dpl_3RSRobwsWmpGjL3ekAXYNHpoyB5G`, estado `READY`.
 
 ## Regra de execução dos módulos
 Para cada módulo:
