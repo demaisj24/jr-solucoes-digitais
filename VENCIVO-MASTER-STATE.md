@@ -82,13 +82,27 @@ Enquanto a análise estiver pendente:
 - A seção redundante `#ia` foi removida, pois repetia a proposta central já apresentada no Hero.
 - O formulário de contato foi preservado sem alteração funcional.
 - IDs, hrefs, JavaScript, Supabase/auth, PWA/service worker e demais integrações foram preservados.
-- Diff final em relação à `main` anterior: somente `index.html`, com 2 adições e 3 deleções, correspondentes ao H1, à remoção da seção redundante e ao newline final.
 - Commit de produção: `aa5801ce53cf49f3a896448e6988b8785a6f4937`.
 - Vercel production: `READY`, deployment `dpl_EZ2qNJfipcZnqfzd1CSSocipmaWV`.
 - Aliases de produção confirmados: `vencivo.com.br` e `www.vencivo.com.br`.
 
+**HOME-07 — Prova social visual demonstrativa**
+- Concluído e publicado em produção.
+- PR: `#5`.
+- Commit de merge em `main`: `c4f183ab8f1b6a4c31fb4ef858b7729eb79d8506`.
+- Alteração restrita ao `index.html`.
+- Nova seção após o Hero/demonstração do agente.
+- Três exemplos demonstrativos: Clínica, Imobiliária e Prestadora de serviços.
+- A seção identifica explicitamente que os exemplos são demonstrativos.
+- Nenhum cliente, depoimento ou métrica foi inventado.
+- Classes visuais existentes foram reutilizadas.
+- Nenhum novo JavaScript, backend ou integração foi introduzido.
+- IDs, formulário, WhatsApp/Gmail, Supabase/auth e PWA/service worker preservados.
+- Vercel production: `READY`, deployment `dpl_3RSRobwsWmpGjL3ekAXYNHpoyB5G`.
+- Aliases de produção confirmados: `vencivo.com.br` e `www.vencivo.com.br`.
+- Produção respondeu HTTP 200 em `www.vencivo.com.br` após o deploy.
+
 ### Fila posterior
-- HOME-07 — prova social visual com exemplos claramente identificados
 - HOME-08 — revisão visual final desktop/mobile
 
 ## 6. Outras pendências
