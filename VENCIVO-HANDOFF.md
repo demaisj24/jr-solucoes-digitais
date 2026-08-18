@@ -6,13 +6,14 @@
 **Produção:** Vercel `vencivo-ai` → `vencivo.com.br`
 
 ## Último módulo concluído
-**HOME-06 — Finalização visual aprovada**
+**HOME-07 — Prova social visual demonstrativa**
 
 ## Resultado
-A Home recebeu a finalização visual aprovada nesta sessão:
-1. H1 do Hero passou a quebrar explicitamente em duas linhas.
-2. A seção redundante `#ia` foi removida, pois repetia a mensagem central e a demonstração do agente.
-3. O formulário de contato foi preservado sem alteração funcional.
+A Home recebeu uma seção de prova social demonstrativa imediatamente após o Hero/demonstração do agente:
+1. título `Um agente. Diferentes negócios.`;
+2. três exemplos demonstrativos: Clínica, Imobiliária e Prestadora de serviços;
+3. identificação explícita de que os exemplos são demonstrativos;
+4. nenhum cliente, depoimento ou métrica foi inventado.
 
 ## Preservação funcional
 - `id="authLink"` preservado.
@@ -30,44 +31,39 @@ A Home recebeu a finalização visual aprovada nesta sessão:
 ## Arquivo de aplicação alterado
 `index.html`
 
-## Diff
-Comparação da branch de execução contra `main` anterior:
-- 1 arquivo alterado: `index.html`
-- 2 adições
-- 3 deleções
-- H1 em duas linhas
-- remoção da seção redundante `#ia`
-- nenhum backend/integrador alterado
+## Diff final
+Comparação de `home-07-prova-social` contra `main` anterior confirmou:
+- 1 arquivo alterado: `index.html`;
+- nova seção HOME-07;
+- ajuste de newline final;
+- nenhum backend/integrador alterado.
 
 ## Git
-- Branch de trabalho: `home-06-finalizacao`
-- PR: #4
-- PR mergeado em `main`
-- Commit de produção: `aa5801ce53cf49f3a896448e6988b8785a6f4937`
+- Branch de trabalho: `home-07-prova-social`.
+- PR: #5.
+- PR mergeado em `main`.
+- Commit de merge em produção: `c4f183ab8f1b6a4c31fb4ef858b7729eb79d8506`.
 
-## Testes
-Validação estrutural local confirmada:
-- DOCTYPE e fechamento HTML presentes.
-- IDs protegidos únicos: `leadForm`, `emailBtn`, `formMsg`, `authLink`, `installBtn`, `menuBtn`.
-- Supabase presente.
-- service worker presente.
-- WhatsApp e e-mail preservados.
-- `#ia` redundante removido.
-- H1 em duas linhas confirmado.
+## Testes e produção
+Validação estrutural:
+- página compilou no Vercel;
+- deployment de produção ficou `READY`;
+- produção `www.vencivo.com.br` respondeu HTTP 200;
+- aliases `vencivo.com.br` e `www.vencivo.com.br` confirmados;
+- preview da branch também ficou `READY` e respondeu HTTP 200.
 
 Vercel:
-- projeto `vencivo-ai`
-- deployment de produção `dpl_EZ2qNJfipcZnqfzd1CSSocipmaWV`
-- estado `READY`
-- commit `aa5801ce53cf49f3a896448e6988b8785a6f4937`
-- aliases `vencivo.com.br` e `www.vencivo.com.br`
+- projeto `vencivo-ai`;
+- deployment de produção `dpl_3RSRobwsWmpGjL3ekAXYNHpoyB5G`;
+- estado `READY`;
+- commit `c4f183ab8f1b6a4c31fb4ef858b7729eb79d8506`.
 
-Limitação: não houve screenshot automatizado neste ambiente; a confirmação visual final continua recomendada em navegador real.
+Limitação: não houve screenshot automatizado neste ambiente; a confirmação visual subjetiva em navegador real continua recomendada para o HOME-08.
 
 ## Próximo passo exato
-**HOME-07 — prova social visual com exemplos claramente identificados.**
+**HOME-08 — revisão visual final desktop/mobile.**
 
-Não iniciar HOME-07 nesta sessão se isso tornar a conversa extensa; abrir nova conversa no Projeto VENCIVO e ler MASTER STATE + HANDOFF antes de continuar.
+Objetivo: revisar a Home completa em desktop e mobile, identificar apenas ajustes visuais finais, preservar todos os comportamentos existentes e então congelar a Home v1.
 
 ## Itens que não devem ser alterados nesta fase
 - login
