@@ -1,6 +1,6 @@
 # VENCIVO — HANDOFF OFICIAL
 
-**Data:** 18/08/2026  
+**Data:** 19/08/2026  
 **Repositório:** `demaisj24/jr-solucoes-digitais`  
 **Produção:** Vercel `vencivo-ai` → `vencivo.com.br`
 
@@ -35,36 +35,69 @@ Schema confirmado:
 - Conhecimento legado em `agent_knowledge` continua como fallback.
 - Endpoint legado `api/chat.js` foi removido da branch e sua configuração retirada de `vercel.json`, porque não faz parte do fluxo atual de agentes e excedia o limite de Serverless Functions do plano Hobby.
 
-## Banco / infraestrutura
-Migration aplicada no projeto Supabase:
-- `agents.knowledge_store_name` (`text`)
-- bucket privado `vencivo-knowledge`
-- limite de armazenamento por arquivo: 50 MB
+## Correção aplicada em 19/08/2026
+O teste manual revelou dois problemas reais no chat: respostas intermitentes por timeout e respostas com informações não solicitadas misturadas à pergunta atual.
+
+Arquivo alterado:
+`api/agent-chat.js`
+
+Commit:
+`f399d5c27e71daf60103cddf9e5fec22227dddc1`
+
+Correções:
+- histórico enviado ao Gemini reduzido para as últimas 8 mensagens e 1600 caracteres por mensagem;
+- limite de saída reduzido para 220 tokens para respostas mais rápidas e objetivas;
+- timeout interno ajustado para 18,5 segundos, dentro do `maxDuration` configurado para a função;
+- File Search mantido como fonte oficial por agente;
+- prompt reforçado para responder somente à pergunta atual;
+- perguntas de serviços devem retornar diretamente os serviços encontrados, sem mostrar nome de arquivo ou instrução técnica;
+- perguntas de preço devem retornar somente o preço/fato solicitado;
+- perguntas sem informação oficial, como endereço não cadastrado, devem receber resposta clara de ausência de informação, sem erro genérico;
+- erros 429 da Gemini passaram a retornar mensagem específica de indisponibilidade temporária;
+- timeout passou a registrar evidência técnica nos logs.
 
 ## Vercel
-Preview da branch chegou a `READY` após corrigir o limite de 12 Serverless Functions do plano Hobby.
-Deployment de validação atual:
-`dpl_GKJxd4QhQeaAtfr4Fq6qtHQcGDow`
+Deployment da correção:
+`dpl_CVKQbXhLSMLCAGhG3bF7V1rSY8nu`
 
-Build concluído sem erro.
+Estado: **READY**.
 
-## Testes realizados
-- Build Vercel: **OK**.
-- Limite de funções: **corrigido**; preview atual `READY`.
-- Schema Supabase: **confirmado**.
-- Bucket privado: **confirmado**.
-- Produção: sem runtime errors nas últimas 2 horas verificadas.
+Branch alias:
+`vencivo-ai-git-feat-ai-01-knowledge-base-demaisj-7649s-projects.vercel.app`
+
+Build: **OK**, sem erro de compilação.
+
+## Testes observados
+- Criação do agente: **OK**.
+- Upload e indexação do `teste2.txt`: **OK**.
+- Recuperação de preço do documento: **OK**; o agente retornou `R$ 47,90`.
+- Código de teste: **recuperado**, porém respostas anteriores apresentaram instabilidade em algumas requisições.
+- Timeout intermitente: **reproduzido no teste manual** e tratado no código.
+- Resposta com assunto não solicitado: **reproduzida** e tratada no prompt.
+- Build do deployment corrigido: **OK**.
+
+## Próximo teste obrigatório
+Usar o deployment atualizado e executar novamente, no mesmo agente/documento:
+1. `Quais serviços vocês oferecem?`
+2. `Qual é o código de teste VENCIVO?`
+3. `Quanto custa o prato especial de teste?`
+4. `Qual é o endereço da empresa?`
+
+Critério:
+- serviços = itens reais do documento, sem nome de arquivo;
+- código = fato existente no documento;
+- preço = `R$ 47,90`;
+- endereço inexistente = admitir ausência, sem inventar;
+- nenhuma resposta deve misturar fatos não solicitados;
+- nenhuma requisição deve apresentar timeout/erro genérico durante uma sequência normal de testes.
 
 ## Pendências de validação antes do merge
-1. Teste ponta a ponta de criação de agente.
-2. Upload real de TXT/MD.
-3. Upload real de PDF/DOC/DOCX.
-4. Indexação real no Gemini File Search.
-5. Pergunta baseada no documento e confirmação de recuperação semântica.
-6. Teste de isolamento entre dois agentes.
-7. Teste de prompt injection dentro de documento.
-8. Teste mobile/desktop da nova experiência.
-9. Revisão final do diff antes de qualquer merge em `main`.
+1. Repetir o teste acima no deployment corrigido.
+2. Upload real de PDF/DOC/DOCX.
+3. Teste de isolamento entre dois agentes.
+4. Teste de prompt injection dentro de documento.
+5. Teste mobile/desktop da nova experiência.
+6. Revisão final do diff antes de qualquer merge em `main`.
 
 ## Regra de promoção
 Nenhuma alteração desta branch deve ser promovida para `main` até os testes acima passarem e o diff final ser revisado.
