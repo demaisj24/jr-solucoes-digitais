@@ -5,24 +5,40 @@ import crypto from 'node:crypto';
 // agente/Gemini, não persiste nada e não responde ao cliente final.
 // Persistência + idempotência real (INST-05) usarão dedupeKeyForEntry()
 // abaixo para deduplicar por entry antes de qualquer processamento.
-
-export const config = { api: { bodyParser: false } };
+//
+// INST-04A: usa o formato Web Request/Response (export GET/POST) em vez do
+// formato Node (req,res). Isso elimina a incerteza sobre a camada de
+// helpers automáticos da Vercel (request.query/.cookies/.body) — no modo
+// Web Request essa camada simplesmente não existe, então o corpo chega
+// sempre como bytes brutos, sem depender de nenhuma config para "desativar"
+// um parsing automático. Ver docs/INSTAGRAM-WEBHOOK-FOUNDATION.md.
 
 const VERIFY_TOKEN = process.env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN || '';
 const APP_SECRET = process.env.INSTAGRAM_APP_SECRET || '';
 const MAX_BODY_BYTES = 1024 * 1024; // Meta envia payloads pequenos; protege contra abuso.
 
-function send(res, status, body, type = 'application/json') {
-  res.statusCode = status;
-  res.setHeader('Content-Type', `${type}; charset=utf-8`);
-  res.setHeader('Cache-Control', 'no-store');
-  return res.end(type === 'text/plain' ? String(body) : JSON.stringify(body));
+function json(status, body) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
+  });
 }
 
-async function readRawBody(req) {
+function text(status, body) {
+  return new Response(String(body), {
+    status,
+    headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
+  });
+}
+
+// Lê o corpo em bytes brutos, em streaming, cortando cedo se ultrapassar o
+// limite — mesmo comportamento do IncomingMessage.for-await de antes, só
+// que sobre o ReadableStream padrão de request.body.
+async function readRawBody(request) {
+  if (!request.body) return Buffer.alloc(0);
   const chunks = [];
   let size = 0;
-  for await (const chunk of req) {
+  for await (const chunk of request.body) {
     size += chunk.length;
     if (size > MAX_BODY_BYTES) throw new Error('PAYLOAD_TOO_LARGE');
     chunks.push(chunk);
@@ -85,53 +101,51 @@ function safeLogMeta(payload) {
   return { object: payload?.object, entries: Array.isArray(payload?.entry) ? payload.entry.length : 0 };
 }
 
-export default async function handler(req, res) {
-  if (req.method === 'GET') {
-    if (!VERIFY_TOKEN) return send(res, 503, { error: 'Webhook do Instagram não configurado.' });
-    const query = req.query || {};
-    const mode = String(query['hub.mode'] || '');
-    const token = String(query['hub.verify_token'] || '');
-    const challenge = query['hub.challenge'];
-    if (mode !== 'subscribe' || challenge === undefined || challenge === null || !timingSafeEqualStr(token, VERIFY_TOKEN)) {
-      return send(res, 403, { error: 'Verificação do webhook recusada.' });
-    }
-    return send(res, 200, String(challenge), 'text/plain');
+export async function GET(request) {
+  if (!VERIFY_TOKEN) return json(503, { error: 'Webhook do Instagram não configurado.' });
+  const url = new URL(request.url);
+  const mode = url.searchParams.get('hub.mode') || '';
+  const token = url.searchParams.get('hub.verify_token') || '';
+  const challenge = url.searchParams.get('hub.challenge');
+  if (mode !== 'subscribe' || challenge === null || !timingSafeEqualStr(token, VERIFY_TOKEN)) {
+    return json(403, { error: 'Verificação do webhook recusada.' });
   }
+  return text(200, challenge);
+}
 
-  if (req.method !== 'POST') return send(res, 405, { error: 'Método não permitido.' });
-  if (!APP_SECRET) return send(res, 503, { error: 'Webhook do Instagram não configurado.' });
+export async function POST(request) {
+  if (!APP_SECRET) return json(503, { error: 'Webhook do Instagram não configurado.' });
 
   let rawBody;
   try {
-    rawBody = await readRawBody(req);
+    rawBody = await readRawBody(request);
   } catch (error) {
-    if (error?.message === 'PAYLOAD_TOO_LARGE') return send(res, 413, { error: 'Payload muito grande.' });
+    if (error?.message === 'PAYLOAD_TOO_LARGE') return json(413, { error: 'Payload muito grande.' });
     console.error('Instagram webhook: falha ao ler o corpo da requisição.');
-    return send(res, 400, { error: 'Não foi possível ler a requisição.' });
+    return json(400, { error: 'Não foi possível ler a requisição.' });
   }
 
-  const signatureHeader = req.headers['x-hub-signature-256'];
-  const signature = Array.isArray(signatureHeader) ? signatureHeader[0] : signatureHeader;
+  const signature = request.headers.get('x-hub-signature-256');
   if (!verifySignature(rawBody, signature)) {
-    return send(res, 401, { error: 'Assinatura inválida.' });
+    return json(401, { error: 'Assinatura inválida.' });
   }
 
   let payload;
   try {
     payload = JSON.parse(rawBody.toString('utf8'));
   } catch {
-    return send(res, 400, { error: 'Payload JSON inválido.' });
+    return json(400, { error: 'Payload JSON inválido.' });
   }
 
   if (!isValidInstagramPayload(payload)) {
     // Autenticado, mas fora do escopo aceito nesta fundação. 200 evita que a
     // Meta entre em loop de retentativas para um evento que nunca vamos processar.
-    return send(res, 200, { ok: true, ignored: true });
+    return json(200, { ok: true, ignored: true });
   }
 
   console.log('Instagram webhook: evento recebido.', safeLogMeta(payload));
 
   // Fundação apenas: nenhuma chamada ao agente/Gemini, nenhuma persistência e
   // nenhuma resposta ao cliente final acontece aqui (INST-05 em diante).
-  return send(res, 200, { ok: true, accepted: true, entries: payload.entry.length });
+  return json(200, { ok: true, accepted: true, entries: payload.entry.length });
 }
