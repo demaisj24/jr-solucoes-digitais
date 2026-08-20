@@ -29,6 +29,24 @@ A revisão encontrou 2 FAILs reais: o `REVOKE SELECT (access_token_encrypted)` d
 
 Ainda **nenhuma migration foi aplicada**.
 
+## FASE 2 — Aplicação controlada (concluída)
+
+Migration `instagram_connections_agent_identity` aplicada com sucesso via `apply_migration` (fonte: `docs/sql/instagram-connections-agent-identity.sql`, commit `117c9c3`, só removidos os marcadores `begin;`/`commit;` para não conflitar com a transação própria da ferramenta — nenhuma linha de DDL alterada).
+
+Verificado depois (só consultas de leitura):
+- Schema: `agent_id` (uuid, not null), `access_token_encrypted` (text, not null), `access_token` removida — confirmado via `information_schema.columns`.
+- Constraints: `instagram_connections_agent_owner_fkey` (FK composto agent_id+owner_id → agents), `instagram_connections_instagram_user_id_key` (unique), `instagram_connections_agent_id_key` (unique), `agents_id_owner_id_key` (unique) — todas confirmadas via `pg_constraint`.
+- Privilégios: `has_table_privilege`/`has_column_privilege` confirmam `authenticated`/`anon` sem SELECT nenhum na tabela (incluindo `access_token_encrypted`); `service_role` mantém SELECT/INSERT/UPDATE, incluindo a coluna do token — exatamente o desenho aprovado. Resultado bate 100% com o "depois" documentado em `docs/sql/instagram-connections-privilege-test.sql`.
+- Policies de RLS: as 4 (`select/insert/update/delete_own`) continuam existindo, nenhuma referencia a coluna do token — dormentes conforme previsto (sem grant de tabela, nunca são avaliadas).
+- Dados: `instagram_connections` continua com **0 linhas**.
+- `get_advisors` (security): nenhum lint novo em relação a antes da migration.
+
+Integridade multi-tenant (conexão não pode apontar para agent de outro owner) verificada **pela definição da constraint** (FK composto), não por um INSERT de teste — para preservar `0 linhas` conforme instruído.
+
+Guard de tabela vazia: rodou e não abortou (0 linhas confirmadas antes da aplicação) — é uma checagem de uma vez só, dentro da migration; não é um mecanismo permanente que protege inserts futuros.
+
+`instagram-webhook-events.sql` **não foi aplicada** (fora do escopo desta fase, como instruído).
+
 ## Próximo passo exato
 1. Revisão do ChatGPT sobre a migration proposta (ambos os arquivos `.sql` e o plano).
 2. Se aprovada: aplicar **só** `docs/sql/instagram-connections-agent-identity.sql` via `apply_migration`, confirmando antes que `instagram_connections` continua com 0 linhas.
