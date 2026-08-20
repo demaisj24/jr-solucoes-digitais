@@ -59,6 +59,69 @@ Contador de tentativas (`retry_count`, incrementado a cada tentativa de recovery
 - **5xx (erro do lado da Meta):** cai na categoria "timeout ambíguo" acima — candidato a retry, mas só depois da verificação best-effort.
 - **Erro do Gemini:** categoria diferente dos erros de *envio*, porque **nenhuma mensagem foi enviada à Meta ainda** nesse ponto — seguro de tratar como falha "limpa". Erro transitório (timeout, rate limit) → candidato a retry automático simples, sem risco de duplicidade externa. Erro de conteúdo/política (Gemini recusa gerar resposta) → não adianta retry; marcar `failed` e (fora de escopo desta tarefa) eventualmente rotear para atendimento humano.
 
-## Impacto esperado no schema (não implementado agora)
+## Desenho do estado de resposta (v2, aprovado o desenho de idempotência, ainda sem SQL)
 
-Provável necessidade de colunas adicionais em `instagram_webhook_events` (ou uma tabela relacionada) na próxima revisão: `response_status` (`pending`/`sending`/`sent`/`ambiguous`/`failed`), `instagram_message_id`, `retry_count`, hash do texto de resposta pretendido. Isso é uma extensão do desenho já revisado (INST-05B), não uma tabela nova — fica registrado aqui para a próxima rodada de revisão de schema, **não desenhado como SQL nesta tarefa**, conforme instruído.
+### 1. Separar status do PROCESSAMENTO de status da RESPOSTA?
+
+**Sim.** São conceitos diferentes: um evento pode ser `processed` sem nunca ter enviado resposta (decisão de que nenhuma ação era necessária); um evento pode ter o *processamento* (Gemini) bem-sucedido enquanto o *envio* está `ambiguous`; forçar os dois no mesmo campo `status` criaria combinações sem sentido (`status='processing'` não diz nada sobre se uma resposta já foi tentada, confirmada, ou está em retry). Mantém-se `status` (`received`/`processing`/`processed`/`failed`, já revisado no INST-05B) como o ciclo do **processamento**, e adiciona-se um campo **separado**, `response_status`, para o ciclo da **resposta** — nulo quando nenhuma resposta foi tentada ou é necessária.
+
+### 2. Modelo de estados de `response_status`
+
+`NULL` (nenhuma resposta tentada/necessária) → `sending` → `sent` | `ambiguous` | `failed`, com `ambiguous` podendo voltar para `sending` (retry) ou terminar em `sent` (verificado) ou `failed` (retries esgotados).
+
+Não criei um estado `retrying` separado: uma nova tentativa é só `sending` de novo, com `retry_count` incrementado — inventar um estado a mais para isso seria acrescentar sem necessidade real (o retry_count já diferencia "primeira tentativa" de "tentativa N"). Também não criei um estado `retry_esgotado` separado de `failed` — é `failed` com `last_response_error` explicando o motivo ("retries esgotados"), não um estado novo — o sistema não precisa tratar esses dois motivos de forma diferente depois de chegar ao estado terminal.
+
+### 3. Campos avaliados — o que é necessário e por quê
+
+| Campo | Necessário? | Por quê |
+|---|---|---|
+| `response_status` | **Sim** | Campo central do modelo acima. |
+| `instagram_message_id` | **Sim** | Único dado que a Meta retorna como prova de envio — necessário para auditoria e para eventual cross-check manual. Nulo até `sent`. |
+| `response_attempted_at` | **Sim** | Ancora dupla função: (a) permite ao recovery detectar timeout (`response_status='sending' AND response_attempted_at < now() - limiar`) sem precisar de um estado "timeout" à parte; (b) define o início da janela de busca na verificação best-effort via histórico de conversa. |
+| `response_confirmed_at` | **Sim** | Distinto de `processed_at` (que é do ciclo de *processamento*): responde "quando a resposta foi confirmada como enviada", útil como métrica de latência de resposta isolada, e pode ficar preenchido mesmo quando `processed_at` só é setado um instante depois (pequena limpeza adicional). Fica `NULL` para sempre em eventos que nunca precisaram de resposta — combinação esperada, não um bug. |
+| `last_response_error` | **Sim** | Motivo do estado `ambiguous`/`failed` mais recente — essencial para debug/alerta sem depender de vasculhar logs do Vercel. |
+| `retry_count` | **Sim** | Necessário para o teto de tentativas e para diferenciar tentativas no `response_attempted_at`. |
+| `response_check_at` | **Não incluído** | Avaliado e descartado: marcaria "quando verificamos o histórico de conversa pela última vez" para um evento `ambiguous`. Redundante com `response_attempted_at` + `retry_count` para o volume esperado (casos `ambiguous` devem ser raros, não o caminho comum) — não vale a coluna extra agora. Se o volume de casos ambíguos crescer a ponto de precisar de um backoff próprio só para a verificação (distinto do backoff de reenvio), revisar então. |
+| "backoff/retry timing" | **Sim, como `next_retry_at`** | Em vez de recalcular backoff exponencial toda vez que o recovery varre a tabela, `next_retry_at timestamptz` (calculado pelo código, não por trigger) permite a consulta simples e indexável `WHERE response_status IN ('sending','ambiguous') AND next_retry_at <= now()`. |
+
+**Onde vive isso — colunas na própria linha, ou uma tabela de tentativas separada?** Avaliei as duas: (a) colunas na própria linha de `instagram_webhook_events` — mais simples, mas cada nova tentativa sobrescreve o registro da tentativa anterior (só o estado mais recente fica visível); (b) uma tabela `instagram_response_attempts` (1 evento → N tentativas) — preserva histórico completo de cada tentativa, mais rica para auditoria, mas mais uma tabela para manter e consultar. **Recomendo (a)** para o MVP: o que o sistema precisa para decidir a próxima ação é o **estado atual**, não o histórico completo de tentativas; `last_response_error` já cobre o motivo da tentativa mais recente, que é o que importa operacionalmente agora. Migrar para uma tabela de tentativas depois, se auditoria completa vier a ser necessária, é uma extensão aditiva, não uma mudança destrutiva.
+
+### 4. Máquina de transição completa
+
+```
+NULL ──(decide enviar resposta)──> sending [response_attempted_at=now(), retry_count=0]
+
+sending ──(200 + message_id)──> sent
+    [instagram_message_id=<id>, response_confirmed_at=now()]
+
+sending ──(4xx)──> failed
+    [last_response_error='4xx: <motivo>']   -- sem retry
+
+sending ──(timeout | 5xx)──> ambiguous
+    [last_response_error='timeout' | '5xx: <motivo>']
+
+ambiguous ──(verificação via histórico ENCONTRA a mensagem)──> sent
+    [response_confirmed_at=now()]   -- momento da confirmação, não do envio real
+
+ambiguous ──(não encontrada, retry_count < limite)──> sending
+    [retry_count+=1, response_attempted_at=now()]   -- só quando now() >= next_retry_at
+
+ambiguous ──(retry_count >= limite)──> failed
+    [last_response_error='retries esgotados']
+
+sent, failed são terminais — response_status não muda mais.
+```
+
+### 5. Exemplos dos cenários críticos
+
+**A — sucesso limpo:** `sending(T0)` → Send API 200 em T0+150ms → `sent`, `instagram_message_id=X`, `response_confirmed_at=T0+150ms` → (processamento) `status=processed`.
+
+**B — 4xx (ex.: fora da janela de 24h):** `sending` → Send API 400 → `failed`, `last_response_error='4xx: outside 24h window'` — sem retry, `status=failed` no evento inteiro.
+
+**C — timeout, recovery confirma que FOI enviado:** `sending(T0)` → sem resposta em 10s → recovery marca `ambiguous` → verificação no histórico de conversa encontra mensagem enviada em T0+3s → `sent`, `response_confirmed_at=<agora>` (não T0+3s — é o momento em que *nós* confirmamos, não o do envio real, que só é uma inferência).
+
+**D — timeout, não confirma, retry, aí sim confirma:** `sending` → timeout → `ambiguous` → verificação não encontra nada → `sending` (retry_count=1) → Send API 200 dessa vez → `sent`. Risco residual aceito e já documentado: se a 1ª tentativa na verdade tinha funcionado mas a verificação não encontrou (atraso de propagação, por exemplo), o cliente recebe duas respostas — pequeno, não-zero, sem solução com as ferramentas que a Meta oferece hoje.
+
+**E — retries esgotados:** `sending` → `ambiguous` → retry(1) → `ambiguous` → retry(2) → `ambiguous` → retry_count atinge o limite → `failed`, `last_response_error='retries esgotados'` — precisa de alerta humano (mecanismo de alerta fora do escopo desta tarefa).
+
+**F — o cenário original do enunciado** (sucesso confirmado pela Meta, VENCIVO cai antes de gravar): `sending(T0)` → Send API 200 em T0+150ms → processo cai **antes** de gravar `sent` → linha fica presa em `sending` → recovery, mais tarde, vê `response_attempted_at` antigo, trata como timeout aparente → marca `ambiguous` → verificação **encontra** a mensagem (porque ela foi mesmo enviada) → `sent`, sem reenviar. É exatamente o mecanismo desenhado para resolver o cenário pedido — mitigação real, não garantia absoluta.

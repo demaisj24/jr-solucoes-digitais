@@ -63,6 +63,12 @@ Estratégia proposta em `docs/INSTAGRAM-RESPONSE-IDEMPOTENCY.md`: gravar `proces
 
 Nenhum SQL aplicado. Nenhum código escrito. Mudança de schema fica para a próxima revisão (não desenhada como SQL nesta tarefa).
 
+## INST-06 — Desenho do estado de resposta (v2, ainda sem SQL)
+
+`status` (processamento) e `response_status` (resposta) **separados** — conceitos diferentes, evita combinações sem sentido. `response_status`: `sending → sent | ambiguous | failed`, `ambiguous` podendo voltar a `sending` (retry) ou terminar em `sent`/`failed`. Campos avaliados como necessários: `response_status`, `instagram_message_id`, `response_attempted_at`, `response_confirmed_at`, `last_response_error`, `retry_count`, `next_retry_at`. `response_check_at` avaliado e **descartado** (redundante com `response_attempted_at`+`retry_count` para o volume esperado). Decisão de manter como colunas na própria linha de `instagram_webhook_events`, não uma tabela de tentativas separada, por simplicidade adequada ao MVP (documentado o trade-off). Máquina de transição completa e 6 cenários críticos documentados em `docs/INSTAGRAM-RESPONSE-IDEMPOTENCY.md`.
+
+Nenhum SQL escrito/aplicado ainda. `main` intocada.
+
 ## Próximo passo exato
 1. Revisão do ChatGPT sobre a migration proposta (ambos os arquivos `.sql` e o plano).
 2. Se aprovada: aplicar **só** `docs/sql/instagram-connections-agent-identity.sql` via `apply_migration`, confirmando antes que `instagram_connections` continua com 0 linhas.
