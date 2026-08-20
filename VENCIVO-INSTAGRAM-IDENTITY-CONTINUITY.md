@@ -77,6 +77,14 @@ Testes: `tests/instagram-webhook-events-schema.test.js` (34 testes, `node --test
 
 Nenhum SQL aplicado (confirmado por leitura: tabela ainda não existe, `instagram_connections` continua com 0 linhas). Nenhum worker, Gemini ou envio ao Instagram implementado. `main` intocada.
 
+## INST-07 — Validação real das constraints (executada, revertida)
+
+`docs/sql/instagram-webhook-events-constraint-test.sql` reescrito para ser autocontido (cria a tabela — cópia exata da v3 aprovada — dentro da MESMA transação que reverte no final, já que a migration real ainda não foi aplicada). Verificado antes de rodar: canário (`begin; create table ...; rollback;`) confirmou que este ambiente preserva blocos de transação explícitos corretamente.
+
+Executado uma vez, dentro de `begin ... rollback`, sem nenhum `commit`. 14 asserções (payload vazio/válido, duplicata de `provider_event_id`, `status`/`response_status` fora do enum, `instagram_message_id`/`response_confirmed_at` sem `sent`, `next_retry_at` com `sent` [rejeitado] e com `ambiguous` [aceito], fluxo completo `sending→sent`, `retry_count` negativo, FK de `agent_id` inexistente, `REVOKE` efetivo para `authenticated`/`anon` com `service_role` preservado, contagem de 4 índices) — **todas passaram**: a query completa sem lançar nenhuma das exceções `'FALHA: ...'` (qualquer uma teria propagado como erro real da chamada).
+
+Verificado depois: `instagram_webhook_events` não existe, `instagram_connections` continua com 0 linhas, `agents` continua com 55 linhas (nenhum resíduo do agente de teste), `list_migrations` mostra as mesmas 14 entradas de antes — nenhuma migration nova registrada. Testes locais (`node --test`) re-executados: 34/34 continuam passando.
+
 ## Próximo passo exato
 1. Revisão do ChatGPT sobre a migration proposta (ambos os arquivos `.sql` e o plano).
 2. Se aprovada: aplicar **só** `docs/sql/instagram-connections-agent-identity.sql` via `apply_migration`, confirmando antes que `instagram_connections` continua com 0 linhas.
