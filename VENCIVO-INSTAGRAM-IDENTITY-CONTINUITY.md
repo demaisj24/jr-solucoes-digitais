@@ -21,6 +21,14 @@
 ## Não alterado (confirmado)
 `main`, `feat/instagram-business-login` (PR #9), `feat/instagram-webhook`, `fix/instagram-webhook-raw-body` (INST-04/04A), AI-01, AI-02, WhatsApp, checkout.
 
+## Correção pós-revisão técnica (2ª rodada)
+
+A revisão encontrou 2 FAILs reais: o `REVOKE SELECT (access_token_encrypted)` da v1 não tinha efeito porque `authenticated`/`anon` já têm `SELECT` de tabela inteira (confirmado com `has_table_privilege`/`has_column_privilege` — `authenticated` já lê `access_token` em texto puro hoje). Corrigido na v2:
+- `docs/sql/instagram-connections-agent-identity.sql` — `REVOKE SELECT` de tabela inteira (sem grant substituto, sem view — busca no repositório confirmou zero consumidores), rollback corrigido para espelhar exatamente esse mecanismo, guard de tabela vazia agora é um `DO $$ RAISE EXCEPTION` real.
+- `docs/sql/instagram-connections-privilege-test.sql` (novo) — teste com `has_table_privilege`/`has_column_privilege`, com o resultado "antes" (bug) documentado a partir de consulta real feita no banco.
+
+Ainda **nenhuma migration foi aplicada**.
+
 ## Próximo passo exato
 1. Revisão do ChatGPT sobre a migration proposta (ambos os arquivos `.sql` e o plano).
 2. Se aprovada: aplicar **só** `docs/sql/instagram-connections-agent-identity.sql` via `apply_migration`, confirmando antes que `instagram_connections` continua com 0 linhas.

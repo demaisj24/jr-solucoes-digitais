@@ -57,6 +57,29 @@ Complementar: o código do backend (o handler que grava a conexão, quando imple
 - Token nunca em log: nem `encrypt()`/`decrypt()` nem nenhum handler devem `console.log` o valor — só metadados (`agent_id`, `status`, tipo de erro).
 - Encrypt/decrypt só no backend: funções vivem em código server-side (`api/*.js`), nunca expostas como endpoint que aceite/retorne o valor decriptado.
 
+## 4a. Correção 7/8 — privilégios de coluna (revisão técnica encontrou FAIL)
+
+A v1 desta migration tinha `REVOKE SELECT (access_token_encrypted) ON instagram_connections FROM authenticated, anon;`. Revisão técnica encontrou que isso **não tem efeito real**: `authenticated`/`anon` já têm `SELECT` em nível de **tabela** nessa tabela hoje — confirmado com `has_table_privilege('authenticated', 'public.instagram_connections', 'SELECT')` = `true`. Documentação oficial do PostgreSQL: *"Granting the privilege at the table level and then revoking it for one column will not do what you might wish: the table-level grant is unaffected by a column-level operation."* Confirmei também, com `has_column_privilege(..., 'access_token', 'SELECT')` = `true`, que **hoje, `authenticated` já consegue ler o `access_token` em texto puro** (mesmo com 0 linhas — o privilégio existe, só não há dado ainda).
+
+### Busca por consumidores (repositório inteiro, `main`)
+
+`instagram_connections`, `instagram_user_id`, `token_expires_at`, `scopes` — **zero ocorrências em qualquer `.js`/`.html`**. `username` — nenhum arquivo contém a string. Ou seja: **nenhum frontend ou API em `main` consulta `instagram_connections` de nenhuma forma, hoje.**
+
+Padrão confirmado no resto do projeto: todo acesso a dado sensível/específico do dono (`deployment-status.js`, e o `instagram-status.js` já desenhado em `feat/instagram-foundation`) passa por um **endpoint de backend com service role**, nunca por consulta direta do cliente à tabela via `anon`/`authenticated`. Não há uma única exceção a esse padrão no código atual.
+
+### Decisão A vs. B
+
+- **A — grant explícito de colunas necessárias:** exigiria eu apontar quais colunas "são necessárias". A busca não encontrou nenhum consumidor real — qualquer lista de colunas seria uma suposição do que "pode vir a ser útil", exatamente o que a instrução pediu para não fazer ("não conceda por conveniência").
+- **B — nenhuma concessão direta + view segura sem token:** resolve o vazamento, mas criar uma *view* sem nenhum consumidor real também é conceder acesso "por conveniência" — só que via um objeto novo em vez de uma coluna.
+
+**Recomendação: uma forma mais estrita de B — `REVOKE SELECT` de tabela inteira, sem grant substituto e sem view.** Nenhuma das duas opções como formuladas se sustenta com a evidência encontrada (zero consumidores); a única resposta consistente com "determine exatamente quais colunas precisam ser expostas" é "nenhuma, hoje". Quando um consumidor real existir, a escolha entre coluna específica, view, ou (o padrão já usado em 100% do resto do projeto) um endpoint de backend deve ser feita então — a última opção nem exige nenhuma alteração de GRANT, porque service role ignora RLS/privilégios de coluna.
+
+**Efeito colateral assumido e sinalizado:** as 4 policies de RLS (`select_own`/`insert_own`/`update_own`/`delete_own`) ficam dormentes — sem privilégio de tabela, RLS nunca chega a ser avaliada para `authenticated`/`anon`. Isso é intencional nesta fase.
+
+### Teste de privilégios
+
+`docs/sql/instagram-connections-privilege-test.sql` — usa `has_table_privilege()`/`has_column_privilege()` (calculam o privilégio efetivo, não só leem grants explícitos — é o mecanismo certo, diferente do que causou a leitura errada da v1). Rodado **antes** da correção, hoje, confirma o bug: `authenticated` tem `SELECT` de tabela inteira e consegue ler `access_token`. Resultado esperado **depois** da v2: `authenticated`/`anon` sem nenhum privilégio de `SELECT` na tabela, para nenhuma coluna.
+
 ## 5. Schema de `instagram_webhook_events` (desenho, não aplicar ainda)
 
 `docs/sql/instagram-webhook-events.sql`. Campos: `id`, `provider_event_id` (`UNIQUE`, é o `dedupeKeyForEntry()` já implementado no INST-04/04A), `instagram_user_id`, `agent_id` (nullable — evento pode chegar antes de existir conexão resolvida), `event_type`, `payload jsonb` (mínimo/seguro — ver nota abaixo), `processed_at`, `created_at`. RLS ligada, sem policy (só service role, mesmo padrão de `billing_events`). Não reaproveita `billing_events` (schema compatível, mas domínio semântico diferente — misturaria mensageria com billing).
@@ -68,15 +91,17 @@ Complementar: o código do backend (o handler que grava a conexão, quando imple
 - **`agents` é tocada** (passo 1, `UNIQUE(id, owner_id)`) — é a única alteração fora de `instagram_connections`. Aditiva, não rejeita dado existente, não muda comportamento de leitura/escrita de `agents`, mas é uma DDL numa tabela de 55 linhas em produção usada por AI-01/AI-02. Sinalizado explicitamente para revisão — nenhuma coluna, valor ou policy de `agents` é alterada, só um índice único adicional.
 - **`agent_id NOT NULL`** significa que, a partir desta migration, **nenhum código pode inserir em `instagram_connections` sem já saber o `agent_id`** — isso é exatamente o que `feat/instagram-foundation` já faz (recebe `agent_id` via parâmetro, valida posse, só então insere), mas **quebra definitivamente `api/instagram.js` do PR #9** (que insere só com `owner_id`, sem `agent_id`) — reforça a recomendação já registrada no relatório de arquitetura anterior de **não mergear PR #9 como está**.
 - **Remoção de `access_token`** é irreversível sem recriar a coluna (rollback abaixo recria vazia, não recupera dado — mas não há dado, tabela está em 0 linhas).
-- **`REVOKE SELECT` em coluna** é uma alteração de privilégio pouco comum neste projeto (todo o resto do controle de acesso é via RLS de linha) — testar depois de aplicar que os endpoints existentes (nenhum ainda em produção lê essa tabela) continuam funcionando.
+- **`REVOKE SELECT` de tabela inteira (v2)** deixa as 4 policies de RLS existentes dormentes (sinalizado acima, seção 4a) — se um consumidor de leitura direta for necessário no futuro, é preciso reavaliar então, não implicitamente.
+- **Guard de tabela vazia (v2, novo)** agora é um `DO $$ ... RAISE EXCEPTION` real dentro da própria transação — se alguém rodar esta migration depois de qualquer INSERT em `instagram_connections`, ela aborta sozinha em vez de depender de alguém lembrar de checar antes.
 
 ## 7. Plano de rollback
 
-Bloco `ROLLBACK` no fim de `docs/sql/instagram-connections-agent-identity.sql` — reverte exatamente os passos 1–7 na ordem inversa. Seguro porque a tabela permanece vazia entre o design e a aplicação (nenhum código em `main` escreve nela hoje). Se, no momento de aplicar, `select count(*) from instagram_connections` não for mais `0`, a migration não deve ser aplicada sem reavaliação (não há passo de backfill de `agent_id` desenhado nesta fase).
+Bloco `ROLLBACK` no fim de `docs/sql/instagram-connections-agent-identity.sql` (v2) — reverte os passos 1, 2–5 e 7 na ordem inversa, incluindo `grant select on instagram_connections to authenticated, anon` (nível de tabela) para desfazer exatamente o `revoke` de tabela inteira do passo 7 corrigido — diferente da v1, cujo rollback tentava desfazer um `revoke` de coluna que nunca teve efeito. Seguro porque a tabela permanece vazia entre o design e a aplicação (nenhum código em `main` escreve nela hoje, confirmado por busca no repositório). Se, no momento de aplicar, `select count(*) from instagram_connections` não for mais `0`, o guard da seção 0 aborta a migration automaticamente.
 
 ## 8. Arquivos alterados nesta fase (só desenho, branch `feat/instagram-identity-migration`)
 
-- `docs/sql/instagram-connections-agent-identity.sql` (novo)
+- `docs/sql/instagram-connections-agent-identity.sql` (v2 — corrige o REVOKE de coluna sem efeito + guard de tabela vazia real)
+- `docs/sql/instagram-connections-privilege-test.sql` (novo — teste de privilégios com `has_table_privilege`/`has_column_privilege`)
 - `docs/sql/instagram-webhook-events.sql` (novo, não aplicar ainda)
 - `docs/INSTAGRAM-IDENTITY-MIGRATION-PLAN.md` (este arquivo)
 - `VENCIVO-INSTAGRAM-IDENTITY-CONTINUITY.md` (continuidade)

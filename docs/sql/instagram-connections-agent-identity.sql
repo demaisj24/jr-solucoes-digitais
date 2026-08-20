@@ -6,12 +6,28 @@
 -- capaz de resolver instagram_user_id -> agent_id -> owner_id, com token
 -- criptografado e isolamento multi-tenant garantido por constraint.
 --
--- Pré-condição confirmada no banco real antes de escrever isto:
---   select count(*) from public.instagram_connections;  -- 0
--- Se esse número não for 0 no momento de aplicar, PARAR e reavaliar
--- (esta migration assume tabela vazia; não faz backfill de agent_id).
+-- v2: corrige o FAIL encontrado em revisão — o REVOKE de coluna original
+-- não tinha efeito real porque authenticated/anon já possuem SELECT em
+-- nível de TABELA (confirmado com has_table_privilege() antes de escrever
+-- esta versão: authenticated_table_select = true, e o access_token em
+-- texto puro hoje já é lido por 'authenticated' via esse grant de tabela).
+-- Ver docs/INSTAGRAM-IDENTITY-MIGRATION-PLAN.md, seção "Correção 7/8".
 
 begin;
+
+-- =========================================================================
+-- 0) Guard transacional — aborta se a tabela deixou de estar vazia
+-- =========================================================================
+-- Esta migration não faz backfill de agent_id nem criptografa tokens
+-- existentes. Ela assume 0 linhas. Isso era só um comentário na v1; agora
+-- é uma checagem real dentro da própria transação.
+do $$
+begin
+  if (select count(*) from public.instagram_connections) <> 0 then
+    raise exception 'instagram_connections não está vazia (% linhas) — esta migration não tem passo de backfill. Abortando.',
+      (select count(*) from public.instagram_connections);
+  end if;
+end $$;
 
 -- =========================================================================
 -- 1) agents: pré-requisito para o FK composto multi-tenant (passo 4)
@@ -19,6 +35,10 @@ begin;
 -- id já é UNIQUE (é a PK). Adicionar (id, owner_id) como UNIQUE não rejeita
 -- nenhuma linha existente (id já é globalmente único) e não muda nenhum
 -- comportamento de leitura/escrita de agents. É puramente aditivo.
+-- Confirmado: 42 das 55 linhas de agents têm owner_id NULL hoje — isso não
+-- viola o UNIQUE (Postgres trata cada NULL como distinto) e faz o FK do
+-- passo 4 corretamente rejeitar conexões apontando para esses agentes
+-- sem dono (comportamento desejado).
 alter table public.agents
   add constraint agents_id_owner_id_key unique (id, owner_id);
 
@@ -32,9 +52,7 @@ alter table public.instagram_connections
 -- =========================================================================
 -- 3) instagram_connections: substituir a coluna de token em texto puro
 -- =========================================================================
--- A tabela está vazia — não há dado a migrar. Remove a coluna de texto
--- puro para que não sobre nenhum caminho de código futuro capaz de
--- gravar um token não criptografado nela.
+-- A tabela está vazia (garantido pelo guard do passo 0) — nada a migrar.
 alter table public.instagram_connections
   drop column access_token;
 
@@ -44,11 +62,6 @@ alter table public.instagram_connections
 -- =========================================================================
 -- 4) instagram_connections: agent_id obrigatório + integridade multi-tenant
 -- =========================================================================
--- FK composto: garante, no nível do banco, que agent_id só pode apontar
--- para um agente cujo owner_id seja EXATAMENTE o mesmo owner_id da própria
--- conexão. Isso torna estruturalmente impossível uma conexão do owner A
--- apontar para um agente do owner B — não depende de nenhuma validação
--- de aplicação para essa garantia específica.
 alter table public.instagram_connections
   alter column agent_id set not null;
 
@@ -61,10 +74,6 @@ alter table public.instagram_connections
 -- =========================================================================
 -- 5) instagram_connections: unicidade global de instagram_user_id
 -- =========================================================================
--- Substitui a constraint antiga, que só impedia duplicidade por
--- (owner_id, instagram_user_id) — permitindo, em tese, a mesma conta
--- Instagram ser conectada por dois owners diferentes ao mesmo tempo.
--- Uma conta Instagram só pode estar ligada a UM agente no sistema inteiro.
 alter table public.instagram_connections
   drop constraint if exists instagram_connections_owner_id_instagram_user_id_key;
 
@@ -72,36 +81,40 @@ alter table public.instagram_connections
   add constraint instagram_connections_instagram_user_id_key
   unique (instagram_user_id);
 
--- Um agente só pode ter uma conexão Instagram ativa por vez.
 alter table public.instagram_connections
   add constraint instagram_connections_agent_id_key
   unique (agent_id);
 
 -- =========================================================================
--- 6) Índices
+-- 6) Índices — nenhum adicional necessário (unique acima já indexa)
 -- =========================================================================
--- instagram_user_id já ganhou índice único implícito no passo 5.
--- agent_id já ganhou índice único implícito no passo 5.
--- owner_id_idx (já existente) permanece útil para telas "minhas conexões".
--- Nenhum índice adicional necessário para esta fase.
 
 -- =========================================================================
--- 7) RLS — mantida, sem regressão de acesso
+-- 7) Privilégios de coluna — CORRIGIDO (v2)
 -- =========================================================================
--- RLS já está habilitada (rls_enabled = true) com 4 policies existentes,
--- todas restritas a owner_id = auth.uid(). Elas continuam válidas sem
--- alteração — o novo agent_id não precisa de policy própria, pois o
--- acesso continua controlado por linha (owner_id), e a integridade
--- agent<->owner agora é garantida pelo FK composto do passo 4.
+-- Decisão (ver seção "Decisão A/B" do plano): nem A (grant explícito de
+-- colunas "convenientes") nem B-com-view — a busca no repositório inteiro
+-- não encontrou NENHUM consumidor (frontend ou API) que leia
+-- instagram_connections hoje. Toda leitura Instagram-relacionada no
+-- projeto (deployment-status.js, e o planejado instagram-status.js) passa
+-- por um endpoint de backend com service role, nunca pelo cliente direto.
+-- Logo: acesso de authenticated/anon é revogado por completo, sem
+-- concessão substituta e sem view. Isso é o mecanismo correto para o bug
+-- encontrado (table-level grant mascarava o revoke de coluna), porque
+-- revoga o grant de TABELA que estava causando o problema, não só de
+-- coluna.
 --
--- Hardening adicional: revogar SELECT de access_token_encrypted para os
--- papéis que o PostgREST usa no client-side. RLS filtra LINHAS, não
--- colunas — sem isto, um SELECT * feito pelo próprio owner autenticado
--- (via anon/publishable key + JWT) devolveria o blob cifrado. Nenhum
--- código atual faz isso (os endpoints já existentes usam service role e
--- nunca selecionam essa coluna), mas a garantia deve estar no banco, não
--- só na disciplina do código de aplicação.
-revoke select (access_token_encrypted) on public.instagram_connections
+-- Efeito colateral, sinalizado explicitamente (não escondido): as 4
+-- policies de RLS já existentes (select_own/insert_own/update_own/
+-- delete_own, todas owner_id = auth.uid()) ficam dormentes — RLS só filtra
+-- linhas de quem já tem privilégio na tabela; sem esse privilégio, a
+-- policy nunca chega a ser avaliada. Isso é intencional nesta fase: se/
+-- quando existir um consumidor real de leitura direta, a escolha entre
+-- (a) grant de colunas específicas, (b) view segura, ou (c) — o padrão já
+-- usado em todo o resto do projeto — um endpoint de backend com service
+-- role, deve ser feita então, com o consumidor real definindo o que
+-- expor. Não antes.
+revoke select on public.instagram_connections
   from authenticated, anon;
 
 -- =========================================================================
@@ -109,13 +122,11 @@ revoke select (access_token_encrypted) on public.instagram_connections
 -- =========================================================================
 -- created_at, updated_at, status, scopes, username, token_expires_at,
 -- instagram_user_id (tipo/nome) — mantidos exatamente como estão.
--- O trigger de updated_at (se existir para esta tabela) não é alterado
--- por esta migration.
 
 commit;
 
 -- =========================================================================
--- ROLLBACK (referência — ver docs/INSTAGRAM-IDENTITY-MIGRATION-PLAN.md)
+-- ROLLBACK — CORRIGIDO (v2), espelha exatamente o mecanismo aplicado
 -- =========================================================================
 -- begin;
 --   grant select on public.instagram_connections to authenticated, anon;
@@ -130,3 +141,10 @@ commit;
 --   alter table public.instagram_connections drop column agent_id;
 --   alter table public.agents drop constraint if exists agents_id_owner_id_key;
 -- commit;
+--
+-- Nota: o passo 7 (v2) fez um REVOKE de tabela inteira, sem nenhum GRANT
+-- substituto — então o rollback correspondente é devolver exatamente o
+-- que existia antes: `grant select on ... to authenticated, anon;` (nível
+-- de tabela, igual ao estado original). Isso é diferente da v1, cujo
+-- rollback tentava desfazer um REVOKE de coluna que nunca teve efeito —
+-- aqui o GRANT de tabela realmente reverte o REVOKE de tabela do passo 7.
