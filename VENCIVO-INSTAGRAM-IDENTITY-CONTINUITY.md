@@ -69,6 +69,14 @@ Nenhum SQL aplicado. Nenhum código escrito. Mudança de schema fica para a pró
 
 Nenhum SQL escrito/aplicado ainda. `main` intocada.
 
+## INST-07 — Implementação controlada do schema final (sem aplicar)
+
+`docs/sql/instagram-webhook-events.sql` v3: incorpora os 7 campos de resposta aprovados no INST-06 sobre a v2 (já auditada, PASS em tudo). Adicionadas CHECKs cruzadas (`instagram_message_id`/`response_confirmed_at` só com `response_status='sent'`; `next_retry_at` só com `sending`/`ambiguous`; `retry_count >= 0`) para o banco recusar estados inconsistentes, não só documentar por comentário.
+
+Testes: `tests/instagram-webhook-events-schema.test.js` (34 testes, `node --test`, sem tocar banco — reimplementa a lógica dos CHECKs e a máquina de transição em JS puro, testa os 7 casos pedidos + os 6 cenários críticos do INST-06 + confere que o arquivo `.sql` contém exatamente os campos/índices aprovados, nem mais nem menos). `docs/sql/instagram-webhook-events-constraint-test.sql`: script preparado para rodar contra o Supabase **depois** que a migration for aplicada (transação com `ROLLBACK` no final, não persiste nada) — **não executado nesta tarefa**.
+
+Nenhum SQL aplicado (confirmado por leitura: tabela ainda não existe, `instagram_connections` continua com 0 linhas). Nenhum worker, Gemini ou envio ao Instagram implementado. `main` intocada.
+
 ## Próximo passo exato
 1. Revisão do ChatGPT sobre a migration proposta (ambos os arquivos `.sql` e o plano).
 2. Se aprovada: aplicar **só** `docs/sql/instagram-connections-agent-identity.sql` via `apply_migration`, confirmando antes que `instagram_connections` continua com 0 linhas.
