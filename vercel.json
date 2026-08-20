@@ -6,5 +6,8 @@
     "api/asaas-checkout.js": {"maxDuration": 20},
     "api/subscription-cancel.js": {"maxDuration": 20},
     "api/webhooks/asaas.js": {"maxDuration": 20}
-  }
+  },
+  "rewrites": [
+    {"source": "/api/health", "destination": "/health.json"}
+  ]
 }
