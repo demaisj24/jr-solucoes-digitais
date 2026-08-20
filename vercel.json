@@ -1,10 +1,14 @@
 {
   "functions": {
-    "api/chat.js": {"maxDuration": 20},
     "api/agent-chat.js": {"maxDuration": 20},
     "api/agents.js": {"maxDuration": 20},
     "api/asaas-checkout.js": {"maxDuration": 20},
     "api/subscription-cancel.js": {"maxDuration": 20},
-    "api/webhooks/asaas.js": {"maxDuration": 20}
-  }
+    "api/webhooks/asaas.js": {"maxDuration": 20},
+    "api/instagram.js": {"maxDuration": 20}
+  },
+  "rewrites": [
+    {"source":"/api/instagram-login","destination":"/api/instagram"},
+    {"source":"/api/instagram-callback","destination":"/api/instagram?callback=1"}
+  ]
 }
