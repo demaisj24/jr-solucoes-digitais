@@ -55,6 +55,14 @@ Corrigido em revisão: `status` (received/processing/processed/failed) adicionad
 
 Nenhum SQL foi aplicado nesta rodada. `instagram_connections` continua com 0 linhas.
 
+## INST-06 — Idempotência da resposta externa (análise, sem código)
+
+Investigado oficialmente: Send API do Instagram (Meta) **não tem idempotency key do lado do cliente** nem mecanismo de deduplicação server-side. Retorna `message_id` só depois do envio (útil para auditoria, não para prevenir duplicidade). Existe leitura de histórico de conversa, usável como verificação *best-effort* no caso ambíguo (timeout/5xx), não como garantia.
+
+Estratégia proposta em `docs/INSTAGRAM-RESPONSE-IDEMPOTENCY.md`: gravar `processed_at` como a instrução imediatamente seguinte a uma resposta 200 confirmada (minimiza a janela ao máximo possível, não elimina); tratar timeout/5xx como estado `ambiguous` distinto de sucesso/falha, com verificação via histórico de conversa antes de qualquer retry; 4xx = falha definitiva, sem retry; erro do Gemini = seguro de repetir (nada foi enviado externamente ainda nesse ponto); limite de tentativas com backoff. Risco residual pequeno e não-zero, documentado explicitamente, não escondido.
+
+Nenhum SQL aplicado. Nenhum código escrito. Mudança de schema fica para a próxima revisão (não desenhada como SQL nesta tarefa).
+
 ## Próximo passo exato
 1. Revisão do ChatGPT sobre a migration proposta (ambos os arquivos `.sql` e o plano).
 2. Se aprovada: aplicar **só** `docs/sql/instagram-connections-agent-identity.sql` via `apply_migration`, confirmando antes que `instagram_connections` continua com 0 linhas.
