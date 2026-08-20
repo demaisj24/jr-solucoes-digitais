@@ -2,98 +2,143 @@
 
 **Data de atualização:** 19/08/2026
 **Repositório oficial:** `demaisj24/jr-solucoes-digitais`
-**Branch:** `main`
-**Produção:** Vercel `vencivo-ai` → `vencivo.com.br`
+**Branch de produção:** `main`
+**Vercel:** `vencivo-ai` → `vencivo.com.br`
 
-## Último módulo concluído
-**HOME-07 — Prova social visual demonstrativa**
+## Ponto oficial de parada
+AI-01 foi concluído, testado ponta a ponta e integrado na `main`.
 
-## Ponto de parada desta sessão — 19/08/2026
-A sessão foi retomada pelo estado oficial do GitHub e os documentos de continuidade foram relidos: MASTER STATE, HANDOFF, ROADMAP, PROTOCOLO e `VENCIVO-META-INSTAGRAM-HANDOFF-2026-08-18.md`.
+### AI-01 — CONCLUÍDO
+Objetivo: permitir que cada agente utilize uma Base de Conhecimento própria e responda com fatos reais do negócio.
 
-### Estado confirmado
-- `main` continua sendo a fonte de produção.
-- Produção continua em `vencivo-ai` → `vencivo.com.br`.
-- `main` não foi alterada durante esta sessão.
-- Não houve merge de AI-01 nem de Instagram.
-- O PR #8 de **AI-01 — Base de Conhecimento do Agente** permanece aberto/draft, com branch `feat/ai-01-knowledge-base`.
-- O PR #9 de **Instagram Business Login** permanece aberto/draft, com branch `feat/instagram-business-login`.
-- O PR #7 de HOME-08 permanece aberto/draft.
+Validado com documento real contendo:
+- Produto: Corte Premium VX
+- Preço: R$ 147,00
+- Código interno: VX-8472
 
-### AI-01 — situação real encontrada
-O PR #8 já contém uma implementação isolada de:
-- `ia-v4.html` como builder visual;
-- criação do agente;
-- upload privado de documentos;
-- PDF, DOC, DOCX, TXT, MD, CSV e RTF;
-- Gemini File Search por agente;
-- isolamento por `public_id`/agente;
-- recuperação semântica integrada ao chat;
-- proteção contra exposição de prompt/credenciais;
-- remoção do endpoint legado `api/chat.js`;
-- ajuste do `vercel.json` para o limite do Vercel Hobby.
+Testes aprovados:
+- upload de documento;
+- indexação;
+- recuperação via File Search;
+- resposta correta de preço;
+- resposta correta de código;
+- consulta de produtos/serviços;
+- pergunta sem informação relevante sem invenção;
+- prompt injection sem exposição do prompt/regras;
+- continuidade/contexto;
+- isolamento funcional por agente;
+- teste do chat com conhecimento real.
 
-Validação observada:
-- preview Vercel `READY`;
-- build concluído sem erro;
-- runtime errors não identificados no período verificado;
-- `main` preservada.
+Modelo funcional validado no ambiente: `gemini-3.5-flash-lite`.
 
-Deployment do preview AI-01 verificado nesta sessão: `dpl_5omZfQ3Z4txcRiFAnXDvjh7hqRgU`.
-Build: concluído; somente aviso do Vercel sobre compilação ESM para CommonJS, sem falha de build.
-Runtime logs consultados nas últimas 24h: nenhum log encontrado.
+A integração final foi feita de forma limpa sobre a `main` atual:
+- branch de integração criada diretamente da `main`;
+- somente `api/agent-chat.js` e `api/agents.js` alterados nessa integração;
+- PR #11 aberto sem Draft;
+- PR #11 mergeado com sucesso;
+- commit de integração: `cc4ce75dfed93285ee2a8b5e4879c920740f88a0`.
 
-**AI-01 permanece como `IMPLEMENTADO / TESTADO PARCIALMENTE`, não CONCLUÍDO.**
+Não reabrir AI-01 sem evidência de regressão.
 
-### Teste que falta fechar
-O próximo teste técnico prioritário é o fluxo real:
-`documento → upload → indexação → recuperação semântica → resposta do agente`.
+## O que já existe no produto
+- Home/landing page SaaS;
+- posicionamento aprovado: não vender como simples chatbot, mas como agente de IA para o negócio;
+- criador de agente;
+- empresa/segmento/serviços;
+- personalidade selecionável;
+- capacidades;
+- criação e persistência de agente;
+- Supabase;
+- Vercel;
+- Gemini;
+- Base de Conhecimento por documentos;
+- File Search por agente;
+- chat do agente;
+- autenticação/conta existente;
+- preparação de cobrança/Asaas existente;
+- domínio `vencivo.com.br`;
+- preparação para integrações Meta/WhatsApp.
 
-Depois devem ser validados, antes de qualquer merge:
-- isolamento entre agentes/clientes;
-- substituição/exclusão de documento;
-- comportamento com documento sem resposta relevante;
-- prompt injection dentro do documento;
-- teste visual desktop/mobile do builder;
-- comportamento do chat com conhecimento real.
+## Próximo módulo oficial — AI-02 / Produto SaaS
+Objetivo: transformar o núcleo funcional em uma experiência SaaS vendável sem quebrar AI-01.
 
-### Instagram / Meta
-O PR #9 continua isolado e não foi promovido para `main`.
-A fundação contém callback OAuth consolidado, state HMAC com expiração, troca de tokens, leitura do perfil, persistência privada e RLS. A ativação real ainda depende das credenciais/segredos do ambiente e da configuração correta na Meta.
+Prioridade imediata:
+1. Dashboard mínimo pós-criação;
+2. listar agentes do cliente;
+3. abrir/configurar agente;
+4. editar dados do agente;
+5. visualizar/gerenciar conhecimento;
+6. histórico/conversas;
+7. experiência de teste do agente;
+8. medir e otimizar latência;
+9. streaming da resposta quando tecnicamente seguro;
+10. Fast Path para perguntas simples quando comprovadamente vantajoso.
 
-Não cadastrar URL inventada na Meta, não tentar contornar a restrição anterior e não alterar o portfólio restrito sem decisão específica.
+### Estratégia de performance
+Não alterar AI-01 apenas por hipótese. Medir primeiro:
+- tempo total;
+- tempo Gemini;
+- File Search;
+- Supabase;
+- primeira resposta percebida;
+- erros 429/5xx.
 
-### HOME-08
-A branch `home-08-service-previews` continua separada. As alterações visuais ainda não foram promovidas para `main`. O preview já havia sido validado pelo usuário.
+Depois aplicar otimizações localizadas.
 
-## Regra para a próxima sessão
-Retomar **exatamente daqui**, priorizando o teste ponta a ponta do AI-01 no preview antes de qualquer merge.
+## Depois do AI-02
+### Monetização
+- definir planos comerciais finais;
+- checkout/assinatura;
+- ativação automática após pagamento;
+- controle de acesso por plano;
+- cancelamento/renovação/inadimplência;
+- métricas de uso/custo.
 
-Sequência:
-1. Testar documento real no preview AI-01.
-2. Confirmar upload/indexação/recuperação/resposta.
-3. Testar isolamento entre agentes.
-4. Testar exclusão/substituição.
-5. Testar prompt injection e documentos sem resposta relevante.
-6. Fazer inspeção visual final do builder.
-7. Se todos os gates passarem, apresentar resultado e só então pedir aprovação para merge.
+### Canais
+- Instagram Business Login/Meta continua isolado;
+- WhatsApp Cloud API / Embedded Signup continua isolado;
+- não tentar contornar restrições atuais da Meta;
+- ativar canais somente após revisão específica.
 
-## Itens que não devem ser alterados sem autorização específica
-- `main` sem aprovação explícita;
-- login;
-- cadastro;
-- sessão/autenticação;
-- Supabase/RLS em produção sem análise;
-- Asaas;
-- checkout;
-- Gemini em produção fora do escopo AI-01;
-- funcionamento existente dos agentes;
-- WhatsApp/Meta enquanto a restrição estiver vigente;
-- PWA/service worker;
-- integrações funcionais existentes.
+### Produção/escala
+- auditoria de autenticação;
+- RLS/isolamento de dados;
+- proteção de APIs;
+- rate limits;
+- prompt injection/documentos maliciosos;
+- credenciais e segredos;
+- testes E2E;
+- teste de carga/concurrency;
+- monitoramento;
+- custos por agente;
+- LGPD/termos/políticas;
+- SEO/analytics/onboarding;
+- PWA/service worker.
 
-## Referências permanentes
-- `VENCIVO-MASTER-STATE.md`
-- `VENCIVO-ROADMAP.md`
-- `VENCIVO-PROTOCOLO-DE-TRABALHO.md`
-- `VENCIVO-META-INSTAGRAM-HANDOFF-2026-08-18.md`
+## Estratégia de lançamento
+Não esperar o produto perfeito para começar a vender.
+
+MVP comercial desejado:
+`cliente cria agente → configura → envia conhecimento → testa → escolhe plano → paga → usa`.
+
+Primeira meta comercial: primeiros 5 clientes, inicialmente por venda/prospecção manual, validando nichos como salão, clínica, restaurante, imobiliária, estética e serviços.
+
+## Meta / Instagram
+PR #9 / branch `feat/instagram-business-login` permanece isolado. Não promover sem decisão específica.
+A restrição atual da Meta permanece uma restrição operacional a ser tratada separadamente. Não criar novo portfólio para contornar a restrição, não repetir convites e não inventar URLs/configurações.
+
+## HOME
+HOME-01 a HOME-07 concluídos/publicados conforme MASTER STATE.
+HOME-08 permanece separado de `main` até decisão específica.
+
+## Regras de continuidade
+- `main` é a fonte de produção.
+- Nunca sobrescrever mudanças aprovadas.
+- Antes de editar, ler o arquivo efetivamente usado.
+- Fazer mudanças localizadas e testáveis.
+- Não afirmar que algo foi corrigido sem evidência do código/deploy/teste.
+- Não fazer merge forçado.
+- Ao interromper uma sessão, atualizar este HANDOFF e o MASTER STATE.
+
+## Próximo passo exato
+**Retomar pelo AI-02: Dashboard mínimo + experiência pós-criação do agente, preservando o AI-01 já integrado.**
