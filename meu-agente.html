@@ -1,0 +1,136 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080b14"><title>VENCIVO AI | Meu agente</title><meta name="robots" content="noindex"><style>
+:root{--bg:#060810;--panel:#0d1220;--text:#f7f8fc;--muted:#9ba7b8;--cyan:#63e6ff;--violet:#9b7cff;--green:#57e6a8;--line:#ffffff16;--red:#ffb0b0}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% 0,#15304455,transparent 35%),var(--bg);color:var(--text);font:15px/1.55 system-ui,Segoe UI,Arial}.wrap{width:min(920px,calc(100% - 20px));margin:auto}.top{position:sticky;top:0;z-index:5;background:#080b14ee;border-bottom:1px solid var(--line);backdrop-filter:blur(16px)}.nav{min-height:60px;display:flex;align-items:center;gap:10px}.brand{display:flex;align-items:center;gap:9px;font-weight:900;color:#fff;text-decoration:none}.logo{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,var(--cyan),var(--violet));color:#071018;font-weight:950}.back{margin-left:auto;color:#cbd5e1;text-decoration:none;font-size:14px}.main{padding:24px 0 60px}.hero{padding:6px 0 18px}.eyebrow{display:inline-block;color:var(--green);border:1px solid #57e6a833;border-radius:999px;padding:5px 10px;font-size:12px}.hero h1{font-size:clamp(26px,5vw,38px);letter-spacing:-.03em;margin:10px 0 4px}.hero p{margin:0;color:var(--muted)}.card{border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,#ffffff09,#ffffff03);padding:20px;box-shadow:0 20px 70px #0006;margin-bottom:14px}.card h2{margin:0 0 3px;font-size:19px}.card .hint{color:var(--muted);font-size:13px;margin:0 0 14px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.kv{border:1px solid var(--line);border-radius:12px;padding:12px;background:#ffffff05}.kv b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:4px;font-weight:800}.kv span{font-size:14.5px;color:#eef2f7}.status-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;border-radius:999px;padding:5px 11px;border:1px solid var(--line)}.status-pill.on{color:var(--green);border-color:#57e6a833;background:#57e6a80f}.status-pill.off{color:var(--muted);border-color:var(--line);background:#ffffff05}.doclist{display:flex;flex-direction:column;gap:8px;margin:12px 0}.doc{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:11px;padding:10px 12px;background:#ffffff05}.doc .ic{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--cyan),var(--violet));display:grid;place-items:center;font-size:14px;flex:0 0 auto}.doc b{font-size:13.5px;display:block}.doc span{font-size:11.5px;color:var(--muted)}.empty{color:var(--muted);font-size:14px;padding:10px 0}.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--line);border-radius:11px;padding:10px 14px;background:#ffffff07;color:#fff;font:inherit;font-weight:800;cursor:pointer;text-decoration:none}.btn:disabled{opacity:.55;cursor:not-allowed}.primary{border:0;background:linear-gradient(135deg,var(--cyan),#b0f7ff);color:#071018}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.drop{display:block;border:1px dashed #ffffff2b;border-radius:12px;padding:14px;cursor:pointer;margin-top:10px}.drop strong{display:block;font-size:14px}.drop small{display:block;color:var(--muted);font-size:12px;margin-top:3px}.channels{display:grid;grid-template-columns:1fr;gap:10px}.channel{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:12px;padding:12px;background:#ffffff05}.channel .ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:17px;flex:0 0 auto;background:#ffffff08}.channel .info{flex:1;min-width:0}.channel b{display:block;font-size:14.5px}.channel span{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}.error{color:var(--red);font-size:14px}.ok{color:var(--green);font-size:14px}.hidden{display:none!important}.msg-note{font-size:12.5px;color:var(--muted);margin-top:8px}@media(max-width:620px){.grid2{grid-template-columns:1fr}.card{padding:16px}}
+</style></head><body>
+<header class="top"><div class="wrap nav"><a class="brand" href="index.html"><span class="logo">V</span><span>VENCIVO AI</span></a><a class="back" href="conta.html">← Meus agentes</a></div></header>
+<main class="wrap main">
+<section class="hero"><span class="eyebrow">● seu agente digital</span><h1 id="pageTitle">Carregando agente...</h1><p id="pageSubtitle">Aguarde um instante.</p></section>
+
+<section class="card" id="gate"><h2>Entre para gerenciar este agente</h2><p class="hint">Você precisa estar logado na conta que criou este agente.</p><div class="actions"><a class="btn primary" href="conta.html">Entrar na minha conta</a></div></section>
+
+<div id="content" class="hidden">
+  <section class="card" id="identityCard">
+    <h2>Identidade</h2><p class="hint">Quem é o seu agente e como ele se apresenta.</p>
+    <div class="grid2">
+      <div class="kv"><b>Nome do agente</b><span id="fAgentName">—</span></div>
+      <div class="kv"><b>Empresa</b><span id="fCompany">—</span></div>
+      <div class="kv"><b>Segmento</b><span id="fSegment">—</span></div>
+      <div class="kv"><b>Status</b><span id="fStatus">—</span></div>
+      <div class="kv"><b>Personalidade</b><span id="fPersonality">—</span></div>
+      <div class="kv"><b>Objetivo</b><span id="fObjective">—</span></div>
+    </div>
+  </section>
+
+  <section class="card" id="knowledgeCard">
+    <h2>Conhecimento</h2><p class="hint">O que seu agente aprendeu sobre a sua empresa.</p>
+    <div id="knowledgeStatus" class="status-pill off">Ainda não configurado</div>
+    <div class="doclist" id="docList"></div>
+    <label class="drop" for="fileInput"><strong>＋ Adicionar documentos</strong><small>PDF, DOC, DOCX, TXT, MD, CSV ou RTF · até 50 MB por arquivo</small></label>
+    <input id="fileInput" type="file" hidden multiple accept=".pdf,.doc,.docx,.txt,.md,.csv,.rtf">
+    <div id="uploadStatus" class="msg-note"></div>
+    <p class="msg-note">A remoção de documentos ainda não está disponível nesta versão.</p>
+  </section>
+
+  <section class="card" id="attendanceCard">
+    <h2>Atendimento</h2><p class="hint">Veja seu agente conversando de verdade antes de colocá-lo pra atender clientes.</p>
+    <div class="actions"><a class="btn primary" id="testLink" href="#" target="_blank" rel="noopener">Testar agente ↗</a></div>
+    <p class="msg-note">Histórico de conversas ainda não disponível nesta versão.</p>
+  </section>
+
+  <section class="card" id="channelsCard">
+    <h2>Canais</h2><p class="hint">Onde seu agente já pode atender — e o que ainda falta conectar.</p>
+    <div class="channels">
+      <div class="channel"><span class="ic">🌐</span><div class="info"><b>Site / link direto</b><span id="siteChannelStatus">Disponível — qualquer pessoa com o link pode conversar com o agente.</span></div><button class="btn" id="copyLink" type="button">Copiar link</button></div>
+      <div class="channel"><span class="ic">📷</span><div class="info"><b>Instagram (Direct e comentários)</b><span>Não conectado. Integração em desenvolvimento — sem previsão de OAuth ativo ainda.</span></div></div>
+      <div class="channel"><span class="ic">💬</span><div class="info"><b>WhatsApp</b><span>Não conectado. Integração em desenvolvimento (Cloud API / Embedded Signup).</span></div></div>
+    </div>
+  </section>
+</div>
+
+<section class="card hidden" id="errorCard"><h2>Não foi possível carregar</h2><p class="error" id="errorText"></p><div class="actions"><a class="btn" href="conta.html">Voltar para meus agentes</a></div></section>
+</main>
+<script type="module">
+import{createClient}from'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const supabase=createClient('https://uxmlmyhiagjefuufanyg.supabase.co','sb_publishable_wAajSubj-zZE7kFh7EAxog_2FxCrs6Z',{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}});
+const $=id=>document.getElementById(id);
+const agentId=new URLSearchParams(location.search).get('id')||'';
+let token='';
+function esc(v){return String(v||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]||m))}
+async function readJson(r){return r.json().catch(()=>({}))}
+function showError(text){$('gate').classList.add('hidden');$('content').classList.add('hidden');$('errorCard').classList.remove('hidden');$('errorText').textContent=text}
+function statusLabel(v){const raw=String(v||'').toLowerCase();const labels={demo:'Demonstração',active:'Ativo',pending:'Aguardando ativação',inactive:'Inativo',paused:'Pausado',trialing:'Período de teste'};return labels[raw]||'Disponível'}
+function personalityLabel(raw){if(!raw)return'Não configurado';try{const p=JSON.parse(raw);if(p&&typeof p==='object'){const parts=[p.personality,p.tone,p.traits,p.formality].filter(Boolean);return parts.length?parts.join(' · '):'Não configurado'}}catch{}return String(raw)}
+function fmtSize(n){const v=Number(n||0);if(!v)return'';if(v<1024)return v+' B';if(v<1024*1024)return(v/1024).toFixed(1)+' KB';return(v/1024/1024).toFixed(1)+' MB'}
+function fmtDate(v){try{return new Date(v).toLocaleDateString('pt-BR')}catch{return''}}
+function renderDocs(list){const el=$('docList');if(!list.length){el.innerHTML='<div class="empty">Nenhum documento enviado ainda.</div>';return}el.innerHTML=list.map(d=>`<div class="doc"><span class="ic">📄</span><div style="min-width:0"><b>${esc(d.file_name)}</b><span>${esc(fmtSize(d.size_bytes))}${d.created_at?' · '+esc(fmtDate(d.created_at)):''}</span></div></div>`).join('')}
+async function loadAgent(){
+  const{data}=await supabase.auth.getSession();
+  if(!data.session){$('content').classList.add('hidden');$('gate').classList.remove('hidden');$('pageTitle').textContent='Meu agente';$('pageSubtitle').textContent='Entre na sua conta para continuar.';return}
+  token=data.session.access_token;
+  $('gate').classList.add('hidden');
+  if(!agentId){showError('Nenhum agente foi informado. Volte e abra um agente pela sua conta.');return}
+  try{
+    const r=await fetch('/api/agents?id='+encodeURIComponent(agentId),{cache:'no-store'});
+    const p=await readJson(r);
+    if(!r.ok)throw new Error(p.error||'Agente não encontrado.');
+    const a=p.agent;
+    $('pageTitle').textContent=a.agent_name;
+    $('pageSubtitle').textContent=a.company_name+' · '+a.segment;
+    $('fAgentName').textContent=a.agent_name||'—';
+    $('fCompany').textContent=a.company_name||'—';
+    $('fSegment').textContent=a.segment||'—';
+    $('fStatus').textContent=statusLabel(a.status);
+    $('fPersonality').textContent=personalityLabel(a.personality);
+    $('fObjective').textContent=a.objective||'Não configurado';
+    $('testLink').href='agente.html?id='+encodeURIComponent(agentId);
+    $('content').classList.remove('hidden');
+    await loadKnowledge();
+  }catch(e){showError(e.message||'Não foi possível carregar este agente.')}
+}
+async function loadKnowledge(){
+  try{
+    const r=await fetch('/api/agents',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({action:'list',agent_id:agentId})});
+    const p=await readJson(r);
+    if(!r.ok)throw new Error(p.error||'Não foi possível carregar o conhecimento.');
+    const docs=Array.isArray(p.documents)?p.documents:[];
+    const pill=$('knowledgeStatus');
+    if(p.knowledge_ready&&docs.length){pill.className='status-pill on';pill.textContent=docs.length+' documento(s) indexado(s)'}
+    else if(docs.length){pill.className='status-pill on';pill.textContent=docs.length+' documento(s) enviado(s)'}
+    else{pill.className='status-pill off';pill.textContent='Ainda não configurado'}
+    renderDocs(docs);
+  }catch(e){$('docList').innerHTML='<div class="empty error">'+esc(e.message)+'</div>'}
+}
+$('fileInput').onchange=async e=>{
+  const picked=Array.from(e.target.files||[]);
+  e.target.value='';
+  if(!picked.length)return;
+  const statusEl=$('uploadStatus');
+  for(let i=0;i<picked.length;i++){
+    const f=picked[i];
+    statusEl.textContent='Enviando '+(i+1)+'/'+picked.length+': '+f.name+'...';
+    statusEl.className='msg-note';
+    try{
+      let r=await fetch('/api/agents',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({action:'prepare',agent_id:agentId,file_name:f.name,size:f.size})});
+      let p=await readJson(r);
+      if(!r.ok)throw new Error(p.error||'Não foi possível preparar "'+f.name+'".');
+      const up=await fetch(p.upload_url,{method:'PUT',headers:{'content-type':f.type||p.mime,'x-upsert':'false'},body:f});
+      if(!up.ok)throw new Error('O upload de "'+f.name+'" falhou.');
+      statusEl.textContent='Indexando '+(i+1)+'/'+picked.length+': '+f.name+'...';
+      r=await fetch('/api/agents',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({action:'process',agent_id:agentId,path:p.path,mime:p.mime,size:p.size,file_name:f.name})});
+      p=await readJson(r);
+      if(!r.ok)throw new Error(p.error||'Não foi possível indexar "'+f.name+'".');
+    }catch(err){statusEl.className='msg-note error';statusEl.textContent=err.message||'Não foi possível enviar o documento.';await loadKnowledge();return}
+  }
+  statusEl.className='msg-note ok';
+  statusEl.textContent=picked.length+' documento(s) processado(s) com sucesso.';
+  await loadKnowledge();
+};
+$('copyLink').onclick=async()=>{
+  const url=location.origin+'/agente.html?id='+encodeURIComponent(agentId);
+  try{await navigator.clipboard.writeText(url);$('copyLink').textContent='Copiado!'}
+  catch{$('copyLink').textContent='Copie: '+url}
+  setTimeout(()=>{$('copyLink').textContent='Copiar link'},2200);
+};
+supabase.auth.onAuthStateChange(()=>loadAgent().catch(()=>{}));
+loadAgent().catch(e=>showError(e.message||'Não foi possível carregar este agente.'));
+</script>
+</body></html>
