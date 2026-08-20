@@ -47,6 +47,14 @@ Guard de tabela vazia: rodou e não abortou (0 linhas confirmadas antes da aplic
 
 `instagram-webhook-events.sql` **não foi aplicada** (fora do escopo desta fase, como instruído).
 
+## INST-05B — desenho de `instagram_webhook_events` (v2, não aplicada)
+
+Corrigido em revisão: `status` (received/processing/processed/failed) adicionado; `payload` agora tem `CHECK` que exige o schema `{entry_id, time, item_count, item_types}` (rejeita payload bruto da Meta no nível do banco, não só por convenção); `REVOKE ALL` explícito de `authenticated`/`anon` (não depender de RLS-sem-policy implícito — confirmado via `pg_default_acl` que este projeto concede grants padrão a tabelas novas); retenção de 90 dias documentada (não implementada — `pg_cron` confirmado não instalado); rollback (`DROP TABLE`) adicionado.
+
+`pgmq` confirmado **não instalado** (`installed_version: null`, schema `pgmq` não existe no banco). Análise de atomicidade (registro+publicação numa única RPC, `pgmq.read()` não `pop()`, `status='processing'` antes de processar, `archive()` só depois de `processed_at`, retry via `vt` expirando) documentada no fim do arquivo `.sql`, baseada na documentação oficial — não testada neste projeto. Nenhum worker implementado. `create extension pgmq;` precisa de migration/aprovação própria, futura.
+
+Nenhum SQL foi aplicado nesta rodada. `instagram_connections` continua com 0 linhas.
+
 ## Próximo passo exato
 1. Revisão do ChatGPT sobre a migration proposta (ambos os arquivos `.sql` e o plano).
 2. Se aprovada: aplicar **só** `docs/sql/instagram-connections-agent-identity.sql` via `apply_migration`, confirmando antes que `instagram_connections` continua com 0 linhas.
