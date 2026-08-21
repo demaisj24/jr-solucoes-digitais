@@ -4,10 +4,15 @@ const MODEL = CONFIGURED_MODEL === 'gemini-3.5-flash' || !CONFIGURED_MODEL
   : CONFIGURED_MODEL;
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
-const buckets = new Map();
+// SEC-13: rate limiting durável via RPC no Supabase (substitui Map() em memória,
+// que não é compartilhada entre instâncias serverless). Fail-open: se o RPC falhar
+// ou estourar o timeout, a requisição é permitida e o erro é logado.
+const SUPABASE_URL = 'https://uxmlmyhiagjefuufanyg.supabase.co';
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const SESSION_LIMIT = 10;
 const IP_LIMIT = 30;
-const WINDOW_MS = 60 * 60 * 1000;
+const RATE_LIMIT_WINDOW_SECONDS = 60 * 60;
+const RATE_LIMIT_TIMEOUT_MS = 1000;
 const GEMINI_TIMEOUT_MS = 12000;
 
 function corsOrigin(req) {
@@ -41,16 +46,35 @@ function clientIp(req) {
   return String(forwarded || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
 }
 
-function bucketHit(key, limit) {
-  const now = Date.now();
-  const current = buckets.get(key);
-  if (!current || now - current.startedAt > WINDOW_MS) {
-    buckets.set(key, { startedAt: now, count: 1 });
+async function rateLimitHit(key, limit) {
+  if (!SERVICE_ROLE_KEY) {
+    console.error('rate_limit_hit sem SUPABASE_SERVICE_ROLE_KEY configurada, permitindo requisição (fail-open)', { key });
     return false;
   }
-  if (current.count >= limit) return true;
-  current.count += 1;
-  return false;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), RATE_LIMIT_TIMEOUT_MS);
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/rate_limit_hit`, {
+      method: 'POST',
+      headers: {
+        apikey: SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ p_key: key, p_limit: limit, p_window_seconds: RATE_LIMIT_WINDOW_SECONDS }),
+      signal: controller.signal
+    });
+    if (!r.ok) {
+      console.error('rate_limit_hit retornou erro HTTP, permitindo requisição (fail-open)', { key, status: r.status });
+      return false;
+    }
+    return await r.json();
+  } catch (error) {
+    console.error('rate_limit_hit falhou, permitindo requisição (fail-open)', { key, error: error?.message });
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function normalizeHistory(history) {
@@ -89,10 +113,10 @@ export default async function handler(req, res) {
     }
 
     const ip = clientIp(req);
-    if (sessionId && bucketHit(`session:${ip}:${sessionId}`, SESSION_LIMIT)) {
+    if (sessionId && await rateLimitHit(`chat:session:${ip}:${sessionId}`, SESSION_LIMIT)) {
       return json(res, 429, { error: 'Você atingiu o limite desta demonstração. Fale com a VENCIVO para colocar seu agente funcionando de verdade.' }, origin);
     }
-    if (bucketHit(`ip:${ip}`, IP_LIMIT)) {
+    if (await rateLimitHit(`chat:ip:${ip}`, IP_LIMIT)) {
       return json(res, 429, { error: 'A demonstração está temporariamente indisponível para este acesso. Tente novamente mais tarde.' }, origin);
     }
 
