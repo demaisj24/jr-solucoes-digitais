@@ -3,6 +3,7 @@
 // in api/agents.js so a future edit cannot move the paid File Search actions back
 // in front of the durable rate limit.
 
+const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
