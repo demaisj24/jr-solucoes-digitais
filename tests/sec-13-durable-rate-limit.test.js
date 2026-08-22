@@ -36,14 +36,22 @@ test('os 3 arquivos são JS sintaticamente válido', () => {
   }
 });
 
-test('nenhum dos 3 arquivos usa mais Map() em memória para rate limit (buckets/WINDOW_MS)', () => {
+test('nenhum dos 3 arquivos usa mais o antigo Map() de rate limit em memória (buckets/WINDOW_MS)', () => {
   for (const rel of Object.values(FILES)) {
     const content = read(rel);
-    assert.equal(/\bnew Map\(\)/.test(content) && rel !== FILES.agentChat, false, `${rel} não deveria mais ter Map() de rate limit`);
-    assert.equal(content.includes('WINDOW_MS'), false, `${rel} ainda referencia o antigo WINDOW_MS`);
-    assert.equal(/buckets\s*=\s*new Map/.test(content), false, `${rel} ainda declara buckets=new Map()`);
+    // \bWINDOW_MS\b sozinho seria um falso positivo aqui: FALLBACK_WINDOW_MS
+    // (Fase 4, legítimo) contém "WINDOW_MS" como sufixo. Só o nome antigo isolado
+    // (sem "FALLBACK_" na frente) é o que não deveria mais existir.
+    assert.equal(/(?<!FALLBACK_)\bWINDOW_MS\b/.test(content), false, `${rel} ainda referencia o antigo WINDOW_MS`);
+    // "buckets" (sem underscore/prefixo) era o nome do Map antigo, ilimitado, keyed
+    // por session_id cru — não deve mais existir em lugar nenhum. fallbackBuckets
+    // (Fase 4) é um nome diferente, de propósito diferente (bounded, ver testes
+    // dedicados em sec-13-fase4-f1-f2.test.js), então não colide com este check.
+    assert.equal(/(?<![a-zA-Z])buckets\s*=\s*new Map/.test(content), false, `${rel} ainda declara buckets=new Map() (o Map antigo, sem teto)`);
   }
-  // agent-chat.js mantém um Map(), mas é o `cache` de agente/conhecimento (não relacionado a rate limit).
+  // agents.js não deveria ter Map nenhum (nunca teve dimensão de sessão, Fase 4 não o altera).
+  assert.equal(/new Map\(\)/.test(read(FILES.agents)), false, 'agents.js não deveria ter nenhum Map() em memória');
+  // agent-chat.js mantém um Map(), que é o `cache` de agente/conhecimento (não relacionado a rate limit).
   assert.match(read(FILES.agentChat), /const cache=new Map\(\)/, 'agent-chat.js deveria manter o cache de agente/conhecimento intocado');
 });
 
@@ -62,22 +70,33 @@ test('nenhum arquivo api/*.js chama rate_limit_cleanup automaticamente (decisão
   }
 });
 
-test('chat.js: chaves com prefixo "chat:", limites e janela corretos (10/h sessão, 30/h IP)', () => {
+test('chat.js: chaves com prefixo "chat:" (sessão via sessionSlot — Fase 4), limites e janela corretos (10/h sessão, 30/h IP)', () => {
   const c = read(FILES.chat);
-  assert.match(c, /`chat:session:\$\{ip\}:\$\{sessionId\}`/);
+  assert.match(c, /`chat:session:\$\{ip\}:\$\{sessionSlot\(sessionId,\s*SESSION_SLOTS\)\}`/);
   assert.match(c, /`chat:ip:\$\{ip\}`/);
   assert.match(c, /SESSION_LIMIT\s*=\s*10\b/);
   assert.match(c, /IP_LIMIT\s*=\s*30\b/);
   assert.match(c, /RATE_LIMIT_WINDOW_SECONDS\s*=\s*60\s*\*\s*60\b/);
 });
 
-test('agent-chat.js: chaves com prefixo "agent-chat:", limites e janela corretos (30/h sessão, 120/h IP)', () => {
+test('agent-chat.js: chaves com prefixo "agent-chat:" (sessão via sessionSlot — Fase 4), limites e janela corretos (30/h sessão, 120/h IP)', () => {
   const c = read(FILES.agentChat);
-  assert.match(c, /`agent-chat:session:\$\{client\}:\$\{sid\}`/);
+  assert.match(c, /`agent-chat:session:\$\{client\}:\$\{sessionSlot\(sid,\s*SESSION_SLOTS\)\}`/);
   assert.match(c, /`agent-chat:ip:\$\{client\}`/);
   assert.match(c, /SESSION_LIMIT=30\b/);
   assert.match(c, /IP_LIMIT=120\b/);
   assert.match(c, /RATE_LIMIT_WINDOW_SECONDS=60\*60\b/);
+});
+
+test('chat.js e agent-chat.js: checagem de IP vem ANTES da de sessão no handler (Fase 4 — correção F1)', () => {
+  for (const rel of [FILES.chat, FILES.agentChat]) {
+    const c = read(rel);
+    const ipCallIdx = rel === FILES.chat ? c.indexOf('rateLimitHit(`chat:ip:') : c.indexOf('hit(`agent-chat:ip:');
+    const sessionCallIdx = rel === FILES.chat ? c.indexOf('rateLimitHit(`chat:session:') : c.indexOf('hit(`agent-chat:session:');
+    assert.notEqual(ipCallIdx, -1, `${rel}: checagem de IP não encontrada`);
+    assert.notEqual(sessionCallIdx, -1, `${rel}: checagem de sessão não encontrada`);
+    assert.ok(ipCallIdx < sessionCallIdx, `${rel}: checagem de IP deveria vir antes da de sessão no código-fonte`);
+  }
 });
 
 test('agents.js: chave com prefixo "agents:create:", limite e janela corretos (5/h)', () => {
@@ -100,20 +119,22 @@ function sliceAfter(content, fromMarker) {
   return content.slice(from, to);
 }
 
-test('chat.js e agent-chat.js: fail-open (retornam false tanto no erro HTTP quanto na exceção)', () => {
+test('chat.js e agent-chat.js: erro HTTP e exceção do RPC caem no fallback local, não mais fail-open incondicional (Fase 4 — correção F2)', () => {
   for (const rel of [FILES.chat, FILES.agentChat]) {
     const c = read(rel);
     const errorAndCatchBlock = sliceAfter(c, '!r.ok');
-    const returns = errorAndCatchBlock.match(/return (true|false)/g) || [];
-    assert.ok(returns.length >= 2, `${rel}: esperava 2 "return" (erro HTTP + catch), achou ${returns.length}`);
-    assert.ok(returns.every((r) => r === 'return false'), `${rel}: todos os returns entre !r.ok e o sucesso deveriam ser "return false" (fail-open), achou: ${returns.join(', ')}`);
+    const fallbackCalls = errorAndCatchBlock.match(/fallbackHit\(/g) || [];
+    assert.ok(fallbackCalls.length >= 2, `${rel}: esperava 2 chamadas a fallbackHit (erro HTTP + catch), achou ${fallbackCalls.length}`);
+    assert.equal(/\breturn false;/.test(errorAndCatchBlock), false, `${rel}: não deveria mais existir "return false" incondicional (fail-open sem teto) entre !r.ok e o sucesso`);
+    assert.equal(/\breturn true;/.test(errorAndCatchBlock), false, `${rel}: não deveria existir "return true" incondicional ali (o resultado vem de fallbackHit)`);
   }
 });
 
-test('agent-chat.js: log de fail-open é explícito e "grepável" (SEC13_RATE_LIMIT_FAIL_OPEN) para monitoramento', () => {
-  const c = read(FILES.agentChat);
-  const matches = c.match(/SEC13_RATE_LIMIT_FAIL_OPEN/g) || [];
-  assert.ok(matches.length >= 2, 'deveria aparecer no log do erro HTTP e no log da exceção');
+test('chat.js e agent-chat.js: log do fallback é explícito e "grepável" (SEC13_RATE_LIMIT_FALLBACK) para monitoramento (Fase 4)', () => {
+  for (const rel of [FILES.chat, FILES.agentChat]) {
+    const matches = read(rel).match(/SEC13_RATE_LIMIT_FALLBACK/g) || [];
+    assert.ok(matches.length >= 2, `${rel}: deveria aparecer no log do erro HTTP e no log da exceção`);
+  }
 });
 
 test('agents.js: fail-closed (retorna true tanto no erro HTTP quanto na exceção)', () => {
@@ -149,12 +170,16 @@ test('nenhum fornecedor/SDK novo foi introduzido (sem package.json, sem require 
   }
 });
 
-test('diff contra origin/main é exatamente o esperado: os 3 endpoints + este arquivo de teste — nada além disso', () => {
+test('diff contra origin/main é exatamente o esperado: os 3 endpoints + os arquivos de teste do SEC-13 (Fase 3 e 4) — nada além disso', () => {
   const changed = execSync('git diff origin/main --name-only', { cwd: root }).toString().trim().split('\n').filter(Boolean);
   const untracked = execSync('git status --porcelain=v1', { cwd: root }).toString().trim().split('\n').filter(Boolean)
     .filter((l) => l.startsWith('??')).map((l) => l.slice(3).replace(/\/$/, ''));
   const allTouched = new Set([...changed, ...untracked]);
-  const expected = new Set([FILES.chat, FILES.agentChat, FILES.agents, 'tests/sec-13-durable-rate-limit.test.js']);
+  const expected = new Set([
+    FILES.chat, FILES.agentChat, FILES.agents,
+    'tests/sec-13-durable-rate-limit.test.js',
+    'tests/sec-13-fase4-f1-f2.test.js'
+  ]);
   for (const f of expected) assert.ok(allTouched.has(f), `${f} deveria aparecer no diff (esperado pelo SEC-13, mas ausente)`);
   const unexpected = [...allTouched].filter((f) => !expected.has(f));
   assert.deepEqual(unexpected, [], `arquivos inesperados no diff (fora do escopo do SEC-13): ${unexpected.join(', ')}`);
