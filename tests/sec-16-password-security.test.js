@@ -7,21 +7,23 @@ const source = fs.readFileSync(path.join(__dirname, '..', 'password-security.js'
 const proxy = fs.readFileSync(path.join(__dirname, '..', 'api', 'pwned-password-range.js'), 'utf8');
 
 function policy(password) {
-  if (password.length < 12) return false;
-  if (!/[a-z]/.test(password)) return false;
-  if (!/[A-Z]/.test(password)) return false;
-  if (!/[0-9]/.test(password)) return false;
-  if (!/[^A-Za-z0-9]/.test(password)) return false;
-  return true;
+  return typeof password === 'string' && password.length >= 8;
 }
 
-test('SEC-16: password policy requires 12+ chars and mixed character classes', () => {
-  assert.equal(policy('Abc123!xyz45'), true);
-  assert.equal(policy('Abc123!xyz4'), false);
-  assert.equal(policy('abcdefghijkL1!'), true);
-  assert.equal(policy('abcdefghijk123!'), false);
-  assert.equal(policy('ABCDEFGHIJK1!'), false);
-  assert.equal(policy('Abcdefghijk!!'), false);
+test('SEC-16: password policy requires 8+ characters without composition rules', () => {
+  assert.equal(policy('12345678'), true);
+  assert.equal(policy('abcdefgh'), true);
+  assert.equal(policy('Abc123!x'), true);
+  assert.equal(policy('abcdefg'), false);
+  assert.equal(policy('1234567'), false);
+});
+
+test('SEC-16: shared policy implementation is 8+ only', () => {
+  assert.match(source, /password\.length < 8/);
+  assert.doesNotMatch(source, /password\.length < 12/);
+  assert.doesNotMatch(source, /\[a-z\]/);
+  assert.doesNotMatch(source, /\[A-Z\]/);
+  assert.doesNotMatch(source, /\[0-9\]/);
 });
 
 test('SEC-16: browser sends only a 5-character hash prefix to the VENCIVO proxy', () => {
@@ -60,6 +62,18 @@ test('SEC-16: signup and password reset import the shared password security modu
   assert.match(reset, /\.\/password-security\.js/);
   assert.match(conta, /checkPwnedPassword\(password\)/);
   assert.match(reset, /checkPwnedPassword\(p\)/);
+});
+
+test('SEC-16: UI policy text does not require 12 characters or character classes', () => {
+  const conta = fs.readFileSync(path.join(__dirname, '..', 'conta.html'), 'utf8');
+  const reset = fs.readFileSync(path.join(__dirname, '..', 'redefinir-senha.html'), 'utf8');
+  assert.match(conta, /minlength="8"/);
+  assert.match(conta, /Mínimo: 8 caracteres/);
+  assert.doesNotMatch(conta, /Mínimo: 12 caracteres/);
+  assert.match(reset, /minlength="8"/);
+  assert.match(reset, /pelo menos 8 caracteres/i);
+  assert.doesNotMatch(reset, /pelo menos 12 caracteres/i);
+  assert.doesNotMatch(reset, /letras maiúsculas e minúsculas, número e símbolo/i);
 });
 
 test('SEC-16: subscription cancel route remains unchanged', () => {
