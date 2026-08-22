@@ -12,7 +12,11 @@ test('SEC-17: knowledge management requires authenticated owner even for demo ag
   const fn = source.slice(start, end);
 
   assert.match(fn, /const u=await authUser\(req\)/);
-  assert.match(fn, /if\(!u\?\.id\)/, 'must reject unauthenticated knowledge management');
+  assert.match(
+  fn,
+  /if\(!u\?\.id(?:\|\|[^)]*)?\)/,
+  'must reject unauthenticated knowledge management'
+);
   assert.match(fn, /a\.owner_id!==u\.id/, 'must require owner match');
 });
 

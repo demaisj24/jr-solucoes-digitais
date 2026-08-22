@@ -17,7 +17,19 @@ function normalizeServices(value){const v=clean(value,6000);if(!v)return '';if(/
 function bodyTooLarge(req){const n=Number(req.headers['content-length']||0);return Number.isFinite(n)&&n>MAX_BODY_BYTES}
 async function db(path,options={}){if(!SERVICE_ROLE_KEY)throw new Error('Supabase não configurado no servidor.');const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),SUPABASE_TIMEOUT_MS);try{const r=await fetch(`${SUPABASE_URL}/rest/v1/${path}`,{...options,signal:controller.signal,headers:{apikey:SERVICE_ROLE_KEY,Authorization:`Bearer ${SERVICE_ROLE_KEY}`,'Content-Type':'application/json',Prefer:options.method==='POST'||options.method==='PATCH'?'return=representation':undefined,...(options.headers||{})}});const p=await r.json().catch(()=>null);if(!r.ok){console.error('Supabase error',r.status,p);throw new Error('Falha ao persistir dados.')}return p}catch(e){if(e?.name==='AbortError')throw new Error('O banco de dados demorou mais que o esperado.');throw e}finally{clearTimeout(timeout)}}
 async function authUser(req){const authorization=String(req.headers.authorization||'');if(!authorization.startsWith('Bearer ')||!SERVICE_ROLE_KEY)return null;try{const r=await fetch(`${SUPABASE_URL}/auth/v1/user`,{headers:{apikey:SERVICE_ROLE_KEY,Authorization:authorization}});if(!r.ok)return null;const u=await r.json();return u?.id?u:null}catch{return null}}
-async function knowledgeAgent(req,id){const u=await authUser(req);const rows=await db(`agents?public_id=eq.${encodeURIComponent(id)}&status=in.(demo,active)&select=id,public_id,company_name,owner_id,status,knowledge_store_name`);const a=rows?.[0];if(!a)throw new Error('Agente não encontrado.');if(a.status==='active'&&(!u?.id||a.owner_id!==u.id))throw new Error('Você não tem acesso a este agente.');if(a.owner_id&&a.owner_id!==u?.id)throw new Error('Você não tem acesso a este agente.');return a}
+async function knowledgeAgent(req,id){
+  const u=await authUser(req);
+  const rows=await db(`agents?public_id=eq.${encodeURIComponent(id)}&status=in.(demo,active)&select=id,public_id,company_name,owner_id,status,knowledge_store_name`);
+  const a=rows?.[0];
+
+  if(!a)throw new Error('Agente não encontrado.');
+
+  if(!u?.id||!a.owner_id||a.owner_id!==u.id){
+    throw new Error('Você não tem acesso a este agente.');
+  }
+
+  return a;
+}
 function fileExt(name){const m=String(name||'').toLowerCase().match(/\.[a-z0-9]+$/);return m?m[0]:''}
 async function signedUpload(path){const r=await fetch(`${SUPABASE_URL}/storage/v1/object/upload/sign/${KNOWLEDGE_BUCKET}/${path}`,{method:'POST',headers:{apikey:SERVICE_ROLE_KEY,Authorization:`Bearer ${SERVICE_ROLE_KEY}`,'Content-Type':'application/json'},body:'{}'});const p=await r.json().catch(()=>null);if(!r.ok||!p?.url)throw new Error('Não foi possível preparar o upload.');return `${SUPABASE_URL}/storage/v1${p.url}`}
 async function ensureStore(agent){if(agent.knowledge_store_name)return agent.knowledge_store_name;if(!GEMINI_KEY)throw new Error('GEMINI_API_KEY não configurada.');const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/fileSearchStores?key=${encodeURIComponent(GEMINI_KEY)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({displayName:`VENCIVO · ${agent.company_name} · ${agent.public_id}`,embeddingModel:'models/gemini-embedding-2'})});const p=await r.json().catch(()=>null);if(!r.ok||!p?.name)throw new Error('Não foi possível criar a base inteligente.');await db(`agents?id=eq.${encodeURIComponent(agent.id)}`,{method:'PATCH',body:JSON.stringify({knowledge_store_name:p.name})});return p.name}
