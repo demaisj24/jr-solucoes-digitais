@@ -49,7 +49,10 @@ A SEC-14 adiciona rate limiting durável, usando a mesma RPC `rate_limit_hit` j�
 
 - `action=prepare`: 10/h por IP + 10/h por agente;
 - `action=process`: 5/h por IP + 5/h por agente;
-- os limites são consultados **antes** de `knowledgeAgent()` e, portanto, antes de qualquer chamada que possa chegar ao Gemini;
+- o limite por IP é consultado antes do lookup do agente;
+- o limite por agente usa **somente `a.public_id` retornado pelo banco**, nunca o `agent_id` arbitrário enviado pelo cliente; isso evita reproduzir o problema de cardinalidade ilimitada de chaves que a SEC-13 já corrigiu em `session_id`;
+- em `process`, o limite por agente só é consumido depois de o caminho do arquivo ser validado contra o `public_id` canônico;
+- os limites de agente são aplicados antes de `processKnowledge()` e, portanto, antes de qualquer chamada que possa chegar ao Gemini;
 - `limited()` passa a aceitar limite explícito, preservando `CREATE_LIMIT=5` para criação de agentes;
 - falha/timeout do RPC continua **fail-closed**;
 - UX usa HTTP 429 com mensagens específicas, sem expor detalhes internos.
@@ -57,6 +60,12 @@ A SEC-14 adiciona rate limiting durável, usando a mesma RPC `rate_limit_hit` j�
 ### Por que dois eixos
 
 Somente IP não é suficiente contra tráfego distribuído. Somente agente também não é suficiente porque o atacante pode atingir vários agentes públicos. Os dois eixos reduzem ambos os caminhos de abuso sem exigir mudança de UX ou de arquitetura de armazenamento.
+
+## Revisão adversarial adicional
+
+Durante a própria implementação foi identificado um risco secundário: usar o `agent_id` fornecido pelo cliente diretamente na chave persistente de rate limit criaria uma nova superfície de crescimento ilimitado de buckets. Essa versão foi corrigida antes do fechamento da branch: o bucket por agente agora usa o identificador canônico retornado por `knowledgeAgent()`.
+
+A Vercel documenta que `x-forwarded-for` é sobrescrito pela plataforma e não aceita o valor externo do cliente, mantendo a premissa atual do rate limiting por IP enquanto o VENCIVO estiver diretamente atrás da Vercel.
 
 ## Limitações remanescentes
 
@@ -71,8 +80,9 @@ Somente IP não é suficiente contra tráfego distribuído. Somente agente tamb�
 - [x] Confirmar F6 no código de `main`.
 - [x] Colocar limite antes de `processKnowledge()`.
 - [x] Limitar também o precursor `prepare`.
+- [x] Evitar chaves persistentes baseadas em identificadores arbitrários do cliente.
 - [x] Manter fail-closed no rate limiter.
-- [x] Adicionar teste de regressão do ordering do gate.
+- [x] Adicionar teste de regressão do ordering e da canonicalização da chave.
 - [ ] Executar testes automatizados no ambiente de CI/Claude.
 - [ ] Revisão adversarial final.
 - [ ] Aprovação explícita antes de merge em `main`.
