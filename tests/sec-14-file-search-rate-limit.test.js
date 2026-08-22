@@ -20,6 +20,7 @@ function between(text, start, end) {
 
 const prepare = between(source, "if(action==='prepare')", "if(action==='process')");
 const process = between(source, "if(action==='process')", "if(await limited(`agents:create:");
+const ensureStore = between(source, 'async function ensureStore', 'async function processKnowledge');
 const processKnowledge = between(source, 'async function processKnowledge', 'export default async function handler');
 
 
@@ -58,10 +59,17 @@ test('SEC-14: prepare itself contains no Gemini API call', () => {
 });
 
 
-test('SEC-14: paid File Search calls are isolated inside processKnowledge', () => {
-  assert.match(processKnowledge, /generativelanguage\.googleapis\.com\/v1beta\/fileSearchStores/);
+test('SEC-14: File Search store creation is isolated inside ensureStore', () => {
+  assert.match(ensureStore, /generativelanguage\.googleapis\.com\/v1beta\/fileSearchStores/);
+  assert.match(ensureStore, /embeddingModel/);
+  assert.doesNotMatch(prepare, /generativelanguage\.googleapis\.com/);
+});
+
+
+test('SEC-14: paid File Search upload and operation polling are isolated inside processKnowledge', () => {
   assert.match(processKnowledge, /uploadToFileSearchStore/);
   assert.match(processKnowledge, /generativelanguage\.googleapis\.com\/v1beta\/\$\{operation\.name\}/);
+  assert.match(processKnowledge, /ensureStore\(agent\)/);
   assert.doesNotMatch(prepare, /generativelanguage\.googleapis\.com/);
 });
 
@@ -86,6 +94,7 @@ test('SEC-14: client-controlled agent_id is never used as a persistent agent rat
 test('SEC-14: Gemini File Search actions remain behind the hardened action gates', () => {
   assert.match(source, /action==='prepare'/);
   assert.match(source, /action==='process'/);
+  assert.match(source, /async function ensureStore/);
   assert.match(source, /async function processKnowledge/);
   assert.match(source, /uploadToFileSearchStore/);
   assert.match(source, /fileSearchStores/);
