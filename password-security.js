@@ -14,9 +14,6 @@ async function sha1Hex(value) {
  * Checks a password against Have I Been Pwned Pwned Passwords using
  * k-anonymity. The password and full SHA-1 hash never leave the browser.
  * Only the first five hash characters are sent to the VENCIVO proxy.
- *
- * Returns { compromised: boolean, count: number } or throws when the
- * privacy-preserving check is unavailable. Callers fail closed.
  */
 export async function checkPwnedPassword(password) {
   if (typeof password !== 'string' || password.length === 0) {
@@ -33,9 +30,7 @@ export async function checkPwnedPassword(password) {
     credentials: 'same-origin'
   });
 
-  if (!response.ok) {
-    throw new Error('Pwned password service unavailable');
-  }
+  if (!response.ok) throw new Error('Pwned password service unavailable');
 
   const text = await response.text();
   const line = text.split('\n').find(row => row.trim().toUpperCase().startsWith(`${suffix}:`));
@@ -47,12 +42,8 @@ export async function checkPwnedPassword(password) {
 }
 
 export function validatePasswordPolicy(password) {
-  if (typeof password !== 'string' || password.length < 12) {
-    return 'Use pelo menos 12 caracteres.';
+  if (typeof password !== 'string' || password.length < 8) {
+    return 'Use pelo menos 8 caracteres.';
   }
-  if (!/[a-z]/.test(password)) return 'Inclua pelo menos uma letra minúscula.';
-  if (!/[A-Z]/.test(password)) return 'Inclua pelo menos uma letra maiúscula.';
-  if (!/[0-9]/.test(password)) return 'Inclua pelo menos um número.';
-  if (!/[^A-Za-z0-9]/.test(password)) return 'Inclua pelo menos um símbolo.';
   return '';
 }
