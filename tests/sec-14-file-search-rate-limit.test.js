@@ -20,6 +20,8 @@ function between(text, start, end) {
 
 const prepare = between(source, "if(action==='prepare')", "if(action==='process')");
 const process = between(source, "if(action==='process')", "if(await limited(`agents:create:");
+const processKnowledge = between(source, 'async function processKnowledge', 'export default async function handler');
+
 
 test('SEC-14: prepare uses IP limiting before lookup and canonical agent key after lookup', () => {
   assert.match(source, /KNOWLEDGE_PREPARE_LIMIT=10/);
@@ -29,6 +31,7 @@ test('SEC-14: prepare uses IP limiting before lookup and canonical agent key aft
   assert.ok(prepare.indexOf('knowledgeAgent(req,id)') < prepare.indexOf("limited(`knowledge:prepare:agent:"));
   assert.ok(!prepare.includes("knowledge:prepare:agent:${id}"));
 });
+
 
 test('SEC-14: process uses IP limiting before lookup and canonical agent key before processKnowledge', () => {
   assert.match(source, /KNOWLEDGE_PROCESS_IP_LIMIT=5/);
@@ -41,12 +44,44 @@ test('SEC-14: process uses IP limiting before lookup and canonical agent key bef
   assert.ok(!process.includes("knowledge:process:agent:${id}"));
 });
 
+
 test('SEC-14: limited accepts an explicit limit and remains fail-closed', () => {
   assert.match(source, /async function limited\(key,limit=CREATE_LIMIT\)/);
   assert.match(source, /p_limit:limit/);
   assert.match(source, /if\(!r\.ok\).*return true/s);
   assert.match(source, /catch\(e\).*return true/s);
 });
+
+
+test('SEC-14: prepare itself contains no Gemini API call', () => {
+  assert.doesNotMatch(prepare, /generativelanguage\.googleapis\.com|fileSearchStores|uploadToFileSearchStore/);
+});
+
+
+test('SEC-14: paid File Search calls are isolated inside processKnowledge', () => {
+  assert.match(processKnowledge, /generativelanguage\.googleapis\.com\/v1beta\/fileSearchStores/);
+  assert.match(processKnowledge, /uploadToFileSearchStore/);
+  assert.match(processKnowledge, /generativelanguage\.googleapis\.com\/v1beta\/\$\{operation\.name\}/);
+  assert.doesNotMatch(prepare, /generativelanguage\.googleapis\.com/);
+});
+
+
+test('SEC-14: process cannot reach processKnowledge until both durable gates have passed', () => {
+  const ipGate = process.indexOf("limited(`knowledge:process:ip:");
+  const lookup = process.indexOf('knowledgeAgent(req,id)');
+  const ownership = process.indexOf("path.startsWith(`${a.public_id}/`)");
+  const agentGate = process.indexOf("limited(`knowledge:process:agent:");
+  const call = process.indexOf('processKnowledge(a,path');
+  assert.ok(ipGate >= 0 && lookup > ipGate && ownership > lookup && agentGate > ownership && call > agentGate);
+});
+
+
+test('SEC-14: client-controlled agent_id is never used as a persistent agent rate-limit key', () => {
+  assert.doesNotMatch(source, /knowledge:(?:prepare|process):agent:\$\{id\}/);
+  assert.match(source, /knowledge:prepare:agent:\$\{a\.public_id\}/);
+  assert.match(source, /knowledge:process:agent:\$\{a\.public_id\}/);
+});
+
 
 test('SEC-14: Gemini File Search actions remain behind the hardened action gates', () => {
   assert.match(source, /action==='prepare'/);
