@@ -16,17 +16,17 @@ Do not upgrade Supabase solely for leaked-password protection. Supabase's native
 6. Browser searches the returned suffix list locally for the remaining hash.
 7. The password, full hash, and HIBP API key are never sent or stored by VENCIVO.
 
-The Pwned Passwords API is free and supports k-anonymity; HIBP requires a User-Agent on API requests and supports CORS for the non-authenticated Pwned Passwords API. The backend proxy is used so the browser does not need to spoof or set a forbidden User-Agent header.
+The Pwned Passwords API is free and supports k-anonymity; HIBP requires a User-Agent on API requests. The backend proxy is used so the browser does not need to set a restricted User-Agent header.
 
 ## Policy
 
-- Minimum 12 characters for new passwords.
-- At least one lowercase letter.
-- At least one uppercase letter.
-- At least one digit.
-- At least one symbol.
+- Minimum 8 characters for new passwords.
+- No mandatory uppercase/lowercase/digit/symbol composition rules.
+- Encourage longer, unique passwords in the UI.
 - Known compromised passwords are rejected.
 - If the HIBP verification service is unavailable, signup/password reset fails closed rather than silently skipping the security check.
+
+This policy deliberately separates password strength from arbitrary composition requirements. The goal is strong protection with lower signup/reset friction. Administrative accounts will receive stronger controls such as mandatory MFA and step-up authentication in the later admin-security phase.
 
 ## Abuse controls
 
@@ -43,13 +43,14 @@ Existing login does not verify the current password against HIBP because doing s
 
 `tests/sec-16-password-security.test.js` is dependency-free and verifies:
 
-- 12-character/mixed-class policy;
+- 8-character minimum without composition rules;
 - five-character hash prefix boundary;
 - local hashing before the request;
 - HIBP proxy User-Agent and padding;
 - durable rate-limit gate;
 - no password/full-hash logging or transmission;
 - signup and reset integration;
+- UI consistency with the 8+ policy;
 - subscription cancellation route regression.
 
 ## Production rule
