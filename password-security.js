@@ -1,4 +1,4 @@
-const HIBP_RANGE_URL = 'https://api.pwnedpasswords.com/range/';
+const PWNED_RANGE_URL = '/api/pwned-password-range?prefix=';
 
 function bytesToHex(bytes) {
   return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
@@ -13,10 +13,10 @@ async function sha1Hex(value) {
 /**
  * Checks a password against Have I Been Pwned Pwned Passwords using
  * k-anonymity. The password and full SHA-1 hash never leave the browser.
+ * Only the first five hash characters are sent to the VENCIVO proxy.
  *
  * Returns { compromised: boolean, count: number } or throws when the
- * external privacy-preserving check is unavailable. Callers should fail
- * closed for signup/password changes rather than silently skip the check.
+ * privacy-preserving check is unavailable. Callers fail closed.
  */
 export async function checkPwnedPassword(password) {
   if (typeof password !== 'string' || password.length === 0) {
@@ -26,12 +26,11 @@ export async function checkPwnedPassword(password) {
   const hash = await sha1Hex(password);
   const prefix = hash.slice(0, 5);
   const suffix = hash.slice(5);
-
-  const response = await fetch(`${HIBP_RANGE_URL}${prefix}?Add-Padding=true`, {
+  const response = await fetch(`${PWNED_RANGE_URL}${encodeURIComponent(prefix)}`, {
     method: 'GET',
     headers: { 'Accept': 'text/plain' },
     cache: 'no-store',
-    credentials: 'omit'
+    credentials: 'same-origin'
   });
 
   if (!response.ok) {
@@ -54,6 +53,6 @@ export function validatePasswordPolicy(password) {
   if (!/[a-z]/.test(password)) return 'Inclua pelo menos uma letra minúscula.';
   if (!/[A-Z]/.test(password)) return 'Inclua pelo menos uma letra maiúscula.';
   if (!/[0-9]/.test(password)) return 'Inclua pelo menos um número.';
-  if (![^A-Za-z0-9]/.test(password)) return 'Inclua pelo menos um símbolo.';
+  if (!/[^A-Za-z0-9]/.test(password)) return 'Inclua pelo menos um símbolo.';
   return '';
 }
