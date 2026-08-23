@@ -7,9 +7,6 @@
     "api/subscription-cancel.js": {"maxDuration": 20},
     "api/webhooks/asaas.js": {"maxDuration": 20}
   },
-  "crons": [
-    {"path":"/api/cron/supabase-keepalive","schedule":"0 9 * * *"}
-  ],
   "rewrites": [
     {"source": "/api/health", "destination": "/health.json"}
   ]
