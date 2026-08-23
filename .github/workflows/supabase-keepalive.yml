@@ -1,24 +1,48 @@
 name: Supabase Keepalive
 
+# Evita a pausa por inatividade do projeto Supabase Free (uxmlmyhiagjefuufanyg)
+# com 1 SELECT mínimo, 2x por semana. Roda fora do Vercel de propósito — não
+# consome Serverless Function nem Vercel Cron (o projeto já está no teto de
+# funções do plano Hobby). Só precisa de `contents: read` (não faz checkout,
+# não precisa: chama o Supabase diretamente via curl).
+#
+# Decisões deliberadas:
+# - Usa a chave anônima do Supabase (SUPABASE_ANON_KEY), nunca a service
+#   role — a anon key é pública por natureza (já exposta no frontend),
+#   protegida inteiramente por RLS, não um segredo de alto privilégio; ainda
+#   assim nunca é impressa em log.
+# - Consulta `plan_catalog` — a única tabela do schema com policy de SELECT
+#   para `anon` (verificado via pg_policies antes de escolher). Nunca
+#   `agents` nem qualquer tabela com dado de usuário.
+# - `curl --fail-with-body` faz a chamada falhar (exit != 0) em qualquer
+#   HTTP >= 400 — combinado com `set -euo pipefail`, um erro do Supabase
+#   derruba o job de verdade, nunca mascarado como sucesso.
+# - Timeout curto e explícito (`--connect-timeout`/`--max-time`) — nunca fica
+#   pendurado.
 on:
   schedule:
     - cron: "0 9 * * 1,4"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   keepalive:
     runs-on: ubuntu-latest
+    timeout-minutes: 2
 
     steps:
-      - name: Ping Supabase REST API
+      - name: Ping Supabase REST API (plan_catalog, chave anônima, somente leitura)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           set -euo pipefail
 
           curl --fail-with-body --silent --show-error \
-            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
-            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
-            "${SUPABASE_URL}/rest/v1/agents?select=id&limit=1" \
+            --connect-timeout 5 --max-time 10 \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            "${SUPABASE_URL}/rest/v1/plan_catalog?select=code&active=eq.true&limit=1" \
             -o /dev/null
