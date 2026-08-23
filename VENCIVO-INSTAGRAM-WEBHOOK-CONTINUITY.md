@@ -2,7 +2,7 @@
 
 **Task:** `INST-04` — Fundação do webhook Instagram
 **Branch:** `feat/instagram-webhook`
-**Base:** `main` (commit `e2b91c3`)
+**Base:** `main` (commit `9061dd6`)
 **Autor desta rodada:** Claude Code (implementador)
 
 ## Concluído
@@ -18,7 +18,7 @@
 
 ## Em andamento / pendente
 
-- PR Draft: **não foi possível abrir automaticamente.** Este ambiente não tem `gh` (GitHub CLI) instalado nem um token de API do GitHub configurado. O branch foi (ou será) enviado com `git push -u origin feat/instagram-webhook`; a abertura do PR Draft depende de uma ação humana (ver seção "Próximo passo exato").
+- PR #18 aberto para `main` e pronto para merge após revisão.
 - `INSTAGRAM_WEBHOOK_VERIFY_TOKEN` e `INSTAGRAM_APP_SECRET` **não foram configurados em nenhum ambiente** (nem local, nem Vercel) — isso é esperado nesta tarefa.
 - Nada foi cadastrado no App Dashboard da Meta.
 
