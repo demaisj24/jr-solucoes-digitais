@@ -38,7 +38,7 @@ node --test tests/instagram-webhook.test.js
 
 ## Próximo passo exato
 
-1. Um humano (ou uma sessão com `gh`/token configurado) abre o PR Draft de `feat/instagram-webhook` para `main` usando o corpo descrito no relatório desta sessão.
+1. PR #18 está aberto para `main` e pronto para merge após revisão.
 2. ChatGPT revisa o diff (`api/instagram-webhook.js`, `tests/instagram-webhook.test.js`, `docs/INSTAGRAM-WEBHOOK-FOUNDATION.md`, este arquivo).
 3. Após aprovação: configurar `INSTAGRAM_APP_SECRET` e `INSTAGRAM_WEBHOOK_VERIFY_TOKEN` na Vercel (não nesta tarefa).
 4. Só depois disso, cadastrar a URL do webhook (`/api/instagram-webhook`) no App Dashboard da Meta.
