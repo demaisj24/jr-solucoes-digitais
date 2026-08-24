@@ -1,271 +1,338 @@
-# VENCIVO — Manual de Operação, Manutenção e Continuidade
+# VENCIVO — Manual de Operação, Manutenção, Backup e Recuperação
 
-> Documento operacional para manter o VENCIVO funcionando, diagnosticar problemas, recuperar o sistema e permitir que outra pessoa consiga assumir a manutenção sem depender do conhecimento informal do desenvolvedor.
+> Documento operacional para manter o VENCIVO funcionando, diagnosticar problemas, recuperar o sistema e permitir que outra pessoa assuma a manutenção sem depender do conhecimento informal do desenvolvedor.
 >
 > **Regra de segurança:** este manual nunca deve conter senhas, tokens, API keys, service-role keys ou outros segredos em texto aberto.
 
 ## 1. Objetivo
 
-Ao final da construção do VENCIVO, este documento deverá ser suficiente para responder, de forma prática:
+Este manual deve responder, de forma prática:
 
 - onde está o código;
-- onde está o banco de dados;
-- onde estão os arquivos/Storage;
 - onde o sistema está publicado;
-- quais serviços externos o sistema utiliza;
-- quais variáveis de ambiente existem e para que servem;
-- onde cada segredo é administrado, sem registrar o valor do segredo;
-- como verificar se cada serviço está funcionando;
-- como diagnosticar falhas comuns;
+- onde ficam banco, autenticação e arquivos;
+- quais serviços externos existem;
+- quais variáveis de ambiente são necessárias;
+- como testar cada componente;
+- como diagnosticar falhas;
 - como fazer rollback;
-- como restaurar o banco;
-- como recuperar arquivos do Storage;
-- como recuperar o sistema depois de perda de acesso, erro de deploy ou corrupção;
-- como executar a rotina de backup e confirmar que o backup realmente pode ser restaurado.
-
-O manual deve ser compreensível também por uma pessoa sem conhecimento profundo de programação.
+- como executar backup;
+- como restaurar banco e Storage;
+- como recuperar o sistema após erro humano, perda de acesso ou falha de serviço.
 
 ## 2. Mapa mestre do sistema
 
-### Código-fonte
-
-- Repositório: `https://github.com/demaisj24/jr-solucoes-digitais`
-- Branch de produção: `main`
-- Controle de versão: Git/GitHub
-- Regra: código de produção deve estar versionado; alterações relevantes devem passar por branch/PR quando aplicável.
-
-### Hospedagem / deploy
-
-- Plataforma: Vercel
-- Projeto: `vencivo-ai`
-- URL pública atual: `https://vencivo-ai.vercel.app`
-- O manual final deverá registrar também a URL do projeto no painel da Vercel e explicar onde consultar deployments, logs, variáveis de ambiente e rollback.
-
-### Banco de dados e autenticação
-
-- Plataforma: Supabase
-- Projeto atual: `uxmlmyhiagjefuufanyg`
-- URL do projeto: `https://uxmlmyhiagjefuufanyg.supabase.co`
-- O manual final deverá registrar o link direto para o projeto no painel do Supabase e o mapa das tabelas, RLS, funções e Storage.
-
-### IA e serviços externos
-
-O manual final deverá possuir uma ficha para cada integração efetivamente usada em produção, contendo:
-
-1. nome do serviço;
-2. finalidade;
-3. URL do painel;
-4. variável(is) de ambiente utilizada(s);
-5. onde o segredo é armazenado;
-6. como testar a integração;
-7. como revogar/rotacionar a credencial;
-8. sintomas de falha;
-9. procedimento de recuperação.
-
-Exemplos de integrações que já aparecem no projeto ou no planejamento: Vercel, Supabase, Gemini/Google AI, Asaas, WhatsApp/Meta e Instagram/Meta. A lista definitiva deverá ser conferida contra o código real antes da versão final deste manual.
-
-## 3. Regra de segredos
-
-Nunca colocar neste documento:
-
-- `SUPABASE_SERVICE_ROLE_KEY` real;
-- `SUPABASE_ANON_KEY`/publishable key quando houver motivo para tratá-la como inventário sensível;
-- `GEMINI_API_KEY` real;
-- `ASAAS_ACCESS_TOKEN` real;
-- `INSTAGRAM_APP_SECRET` real;
-- `INSTAGRAM_WEBHOOK_VERIFY_TOKEN` real;
-- senhas;
-- tokens de GitHub, Vercel, Meta ou outros serviços.
-
-O manual deverá registrar somente o **nome da variável**, a **finalidade** e o **local seguro onde o valor é administrado**.
-
-Exemplo:
-
-| Variável | Finalidade | Onde administrar | Valor no manual |
+| Componente | Serviço | Identificação atual | Observação |
 |---|---|---|---|
-| `SUPABASE_SERVICE_ROLE_KEY` | acesso privilegiado do backend | Vercel / GitHub Actions conforme uso | nunca registrar |
-| `INSTAGRAM_APP_SECRET` | validar assinatura do webhook | Vercel | nunca registrar |
+| Código | GitHub | `demaisj24/jr-solucoes-digitais` | `main` é a branch de produção |
+| Deploy | Vercel | projeto `vencivo-ai` | funções em `api/` e frontend estático |
+| Domínio | Web | `https://vencivo.com.br` | domínio principal documentado no código |
+| Preview Vercel | Vercel | `https://vencivo-ai.vercel.app` | usado também na allowlist CORS |
+| Banco/Auth/Storage | Supabase | projeto `uxmlmyhiagjefuufanyg` | URL: `https://uxmlmyhiagjefuufanyg.supabase.co` |
+| IA | Google Gemini | Gemini API + File Search | chave somente no backend |
+| Pagamentos | Asaas | API Asaas | checkout, assinatura e webhook |
+| Instagram | Meta | webhook Instagram | fundação INST-04 pronta; processamento completo pendente |
+| WhatsApp | Meta | integração em evolução | não considerar concluída sem teste E2E real |
 
-## 4. Backup — requisito permanente
+## 3. Arquitetura prática
 
-Backup não é opcional. O objetivo é reduzir ao mínimo o risco de perda do VENCIVO por erro humano, exclusão acidental, falha de serviço, credencial comprometida, corrupção ou alteração incorreta.
+### Frontend
 
-### 4.1 Código
+Arquivos HTML principais na raiz do repositório. Exemplos relevantes:
 
-O GitHub é a fonte versionada do código, mas não deve ser considerado o único mecanismo de continuidade.
+- `index.html` — landing page;
+- `conta.html` — autenticação, dashboard e assinatura;
+- `agente.html` — experiência de teste/conversa;
+- `ia*.html` — criação/configuração do agente;
+- `planos.html` — oferta comercial;
+- `politica-privacidade.html`, `termos-de-uso.html` e outras páginas legais;
+- `meu-agente.html` — existe na branch AI-02, mas **ainda não está integrada à `main` no checkpoint de 24/08/2026**.
 
-A estratégia final deverá manter pelo menos:
+### Backend serverless
 
-- histórico Git no GitHub;
-- proteção da branch `main`;
-- possibilidade de rollback para commit estável;
-- cópia adicional/espelho do repositório quando a estratégia de continuidade for implementada;
-- documentação suficiente para reconstruir o deploy.
+A Vercel publica as rotas JavaScript em `api/`. No checkpoint atual, o `vercel.json` configura `maxDuration: 20` para:
 
-### 4.2 Banco Supabase
+- `api/chat.js`;
+- `api/agent-chat.js`;
+- `api/agents.js`;
+- `api/asaas-checkout.js`;
+- `api/subscription-cancel.js`;
+- `api/webhooks/asaas.js`.
 
-O backup do banco deverá ser tratado separadamente do código.
+A rota `/api/health` é reescrita para `/health.json`, evitando uma função serverless adicional.
 
-A estratégia final deverá prever:
+### Disponibilidade do Supabase
 
-- backup nativo disponível no plano utilizado, quando aplicável;
-- backup lógico externo periódico do PostgreSQL;
-- armazenamento do backup fora do banco de produção;
-- retenção de múltiplas versões;
-- identificação por data/hora;
-- teste periódico de restauração.
+Workflow versionado em:
 
-**Importante:** o keepalive do Supabase criado no SEC-20 serve para manter o projeto ativo; ele **não substitui backup**.
+`.github/workflows/supabase-keepalive.yml`
 
-### 4.3 Supabase Storage
+Agenda atual:
 
-Arquivos do Storage devem ter estratégia própria.
+- segunda-feira às 09:00 UTC;
+- quinta-feira às 09:00 UTC;
+- execução manual via `workflow_dispatch`.
 
-O manual deverá tratar Storage separadamente porque backup do PostgreSQL não deve ser presumido como backup dos bytes armazenados no Storage.
+O workflow faz uma consulta mínima em `agents` e usa GitHub Secrets. **Keepalive não é backup.**
 
-A estratégia final deverá prever:
+## 4. Inventário de variáveis de ambiente
 
-- inventário dos buckets;
-- backup externo dos arquivos importantes;
-- retenção de versões;
-- procedimento de restauração;
-- teste periódico de restauração.
+Não registrar valores neste arquivo.
 
-### 4.4 Configurações e infraestrutura
+| Variável | Uso | Onde deve existir | Sensível |
+|---|---|---|---|
+| `SUPABASE_SERVICE_ROLE_KEY` | acesso privilegiado do backend ao Supabase | Vercel; GitHub Actions quando necessário | SIM |
+| `SUPABASE_URL` | URL do Supabase usada pelo keepalive | GitHub Actions | não contém credencial, mas administrar como configuração |
+| `GEMINI_API_KEY` | Gemini / File Search | Vercel | SIM |
+| `ASAAS_API_KEY` | chamadas à API Asaas | Vercel | SIM |
+| `ASAAS_API_URL` | permite fixar sandbox/produção | Vercel | NÃO, mas deve corresponder à chave |
+| `ASAAS_WEBHOOK_TOKEN` | autenticação do webhook Asaas | Vercel + configuração do webhook no Asaas | SIM |
+| `SITE_URL` | URLs de retorno do checkout | Vercel | NÃO |
+| `INSTAGRAM_WEBHOOK_VERIFY_TOKEN` | verificação GET do webhook Meta | Vercel + painel Meta | SIM |
+| `INSTAGRAM_APP_SECRET` | HMAC-SHA256 dos webhooks Instagram | Vercel | SIM |
 
-Também deverão ser preservados, de forma segura e sem expor segredos:
+### Regras
 
-- `vercel.json`;
-- workflows do GitHub Actions;
-- documentação de deploy;
-- esquema SQL/migrations;
-- configuração de integrações;
-- nomes das variáveis de ambiente;
-- domínios e URLs importantes;
-- configuração relevante de Supabase;
-- configuração relevante de Meta/Instagram/WhatsApp;
-- configuração relevante de Asaas.
+- segredos nunca em HTML, documentação, issue, commit ou mensagem de log;
+- frontend só pode receber chaves públicas adequadas ao navegador;
+- rotação de segredo deve ser feita no provedor e depois no ambiente de produção;
+- após rotação, executar smoke test do fluxo correspondente.
 
-## 5. Inventário operacional que será completado ao longo da construção
+## 5. Integrações e teste rápido
 
-| Item | Onde está | Link | Backup | Como recuperar | Status |
-|---|---|---|---|---|---|
-| Código | GitHub | repositório acima | Git + cópia adicional | clone/checkout de commit | definido |
-| Deploy | Vercel | painel do projeto | configuração versionada + documentação | novo deploy/rollback | pendente de completar |
-| Banco | Supabase | projeto acima | a definir/implementar | restauração PostgreSQL | pendente |
-| Storage | Supabase | projeto acima | a definir/implementar | restauração de arquivos | pendente |
-| Segredos | gestores de ambiente/segredos | não registrar segredo | inventário + rotação | recriar/rotacionar | pendente |
-| IA | provedor utilizado | registrar no manual final | conforme integração | trocar/reconfigurar chave | pendente |
-| Pagamentos | Asaas | registrar no manual final | configuração/documentação | reconfigurar credencial/webhook | pendente |
-| Meta | Instagram/WhatsApp | registrar no manual final | configuração/documentação | reconfigurar App/Webhook | pendente |
+### Supabase
 
-## 6. Procedimento básico para uma pessoa leiga
+**Finalidade:** banco PostgreSQL, Auth, Storage e RPCs.
 
-Quando algo parar de funcionar, seguir esta ordem:
+Teste operacional:
 
-1. **Não apagar arquivos nem alterar produção imediatamente.**
-2. Abrir o VENCIVO e identificar exatamente o que falhou.
-3. Verificar o status do deploy na Vercel.
-4. Verificar logs da função/endpoint afetado.
-5. Verificar status do Supabase.
-6. Verificar se o problema é autenticação, banco, integração externa ou frontend.
-7. Consultar o capítulo correspondente deste manual.
-8. Se a última alteração causou o problema, identificar o commit/deploy anterior estável.
-9. Fazer rollback somente seguindo o procedimento documentado.
-10. Registrar o incidente e a solução.
+1. abrir o projeto no painel Supabase;
+2. confirmar projeto ativo;
+3. verificar Auth;
+4. verificar tabelas principais;
+5. verificar Storage;
+6. executar apenas consultas de leitura durante diagnóstico inicial.
 
-## 7. Checklist de recuperação
+Sintomas comuns:
 
-### Sistema fora do ar
+- 401/403: sessão, RLS, credencial ou autorização;
+- 5xx/timeout: indisponibilidade, função/RPC ou problema de rede;
+- agente sem dados: conferir `owner_id`, `public_id`, status e filtros usados pela API.
 
-- [ ] Vercel está operacional?
-- [ ] Último deployment está `Ready`?
-- [ ] Há erro nos logs?
-- [ ] O domínio responde?
-- [ ] Supabase está operacional?
-- [ ] Variáveis de ambiente estão presentes?
-- [ ] Alguma integração externa está indisponível?
+### Gemini
 
-### Usuário não consegue entrar
+**Finalidade:** respostas de IA e Gemini File Search.
 
-- [ ] Supabase Auth está operacional?
-- [ ] Endpoint/página de conta está funcionando?
-- [ ] Erro ocorre para todos ou somente um usuário?
-- [ ] RLS/policies foram alteradas?
-- [ ] Alguma variável pública/configuração foi alterada?
+Verificar:
 
-### Agente de IA não responde
+- `GEMINI_API_KEY` configurada;
+- quota e billing do projeto Google;
+- criação/acesso ao File Search Store;
+- erro 429, 5xx ou timeout nos logs;
+- documento realmente indexado antes de culpar o chat.
 
-- [ ] Backend responde?
-- [ ] Banco responde?
-- [ ] Conhecimento do agente está disponível?
-- [ ] Credencial do provedor de IA está configurada?
-- [ ] Há erro de quota/limite?
-- [ ] Logs mostram falha de integração?
+### Asaas
 
-### Webhook não funciona
+**Finalidade:** checkout, assinatura, eventos de pagamento e cancelamento.
 
-- [ ] Endpoint público responde?
-- [ ] Segredo/configuração está presente?
-- [ ] Assinatura está sendo validada?
-- [ ] URL cadastrada no provedor está correta?
-- [ ] Logs mostram recebimento?
-- [ ] Evento está sendo persistido corretamente?
+Configuração importante encontrada no código:
 
-## 8. Regra de mudança segura
+- chave sandbox deve começar com `$aact_hmlg_`;
+- chave produção deve começar com `$aact_prod_`;
+- sandbox usa `https://api-sandbox.asaas.com/v3`;
+- produção usa `https://api.asaas.com/v3`;
+- `ASAAS_API_URL` e `ASAAS_API_KEY` devem pertencer ao mesmo ambiente.
+
+Webhook:
+
+- endpoint: `api/webhooks/asaas.js`;
+- cabeçalho esperado: `asaas-access-token`;
+- token comparado com `ASAAS_WEBHOOK_TOKEN`.
+
+### Instagram
+
+**Finalidade atual:** validar webhook Meta.
+
+A fundação INST-04:
+
+- aceita GET de verificação;
+- valida `x-hub-signature-256` com HMAC-SHA256;
+- limita payload a 1 MiB;
+- aceita somente `object: instagram`;
+- não persiste payload bruto;
+- não chama Gemini;
+- não responde ao cliente final.
+
+**Não considerar mensagens Instagram concluídas.** OAuth/identidade, persistência/idempotência real e envio de resposta ainda são etapas futuras.
+
+## 6. Backup — requisito permanente
+
+### 6.1 Código
+
+Fonte principal: GitHub.
+
+Procedimento mínimo:
+
+- manter `main` versionada;
+- usar branches/PRs em mudanças relevantes;
+- marcar commits estáveis importantes;
+- manter uma cópia/espelho adicional do repositório fora da máquina de desenvolvimento.
+
+Recuperação:
+
+1. localizar último commit estável;
+2. criar branch a partir dele;
+3. validar diferença contra produção;
+4. fazer redeploy/rollback.
+
+### 6.2 Banco PostgreSQL Supabase
+
+**Status atual:** estratégia externa ainda precisa ser implementada e testada.
+
+Requisitos antes do lançamento:
+
+- backup lógico externo periódico;
+- arquivo armazenado fora do Supabase de produção;
+- múltiplas versões por data/hora;
+- retenção definida;
+- checksum ou outra verificação de integridade;
+- teste de restauração em ambiente separado.
+
+**Regra:** backup só é considerado válido após restauração real bem-sucedida.
+
+### 6.3 Supabase Storage
+
+Storage deve ser tratado separadamente do PostgreSQL.
+
+Requisitos:
+
+- inventariar buckets;
+- copiar bytes dos arquivos para destino externo;
+- preservar caminho/nome e metadados necessários;
+- manter retenção;
+- testar restauração de pelo menos um conjunto real de arquivos.
+
+Bucket já identificado no código:
+
+- `vencivo-knowledge` — documentos enviados para conhecimento do agente.
+
+O fluxo atual envia o arquivo ao Storage, processa/indexa no Gemini e tenta apagar o objeto temporário depois. Portanto, a política de backup deve distinguir **arquivos temporários** de **arquivos que realmente precisam de retenção**.
+
+## 7. Plano de Disaster Recovery
+
+### Cenário A — deploy quebrado
+
+1. não editar produção diretamente;
+2. identificar último deployment saudável;
+3. comparar commit saudável × commit atual;
+4. fazer rollback na Vercel ou reverter por Git;
+5. executar smoke test.
+
+### Cenário B — banco corrompido/apagado
+
+1. bloquear alterações destrutivas adicionais;
+2. registrar horário aproximado do incidente;
+3. preservar evidências/logs;
+4. restaurar backup em projeto/ambiente separado primeiro;
+5. validar tabelas, constraints, RLS e amostra de dados;
+6. só então planejar retorno à produção.
+
+### Cenário C — segredo comprometido
+
+1. revogar/rotacionar no provedor;
+2. atualizar Vercel/GitHub Secrets conforme uso;
+3. redeploy se necessário;
+4. verificar logs por uso indevido;
+5. testar integração;
+6. documentar incidente sem registrar o segredo antigo ou novo.
+
+### Cenário D — perda do Storage
+
+1. parar rotinas que possam sobrescrever caminhos;
+2. restaurar arquivos para bucket/ambiente de teste;
+3. validar quantidade e amostra de conteúdo;
+4. restaurar produção;
+5. validar referências no banco.
+
+## 8. Diagnóstico para pessoa não técnica
+
+Quando algo falhar:
+
+1. não apagar nada;
+2. identificar qual tela/ação falhou;
+3. verificar se `https://vencivo.com.br` abre;
+4. verificar último deployment Vercel;
+5. verificar Supabase;
+6. verificar logs da função correspondente;
+7. conferir se o problema começou após um deploy específico;
+8. consultar a integração correspondente neste manual;
+9. preferir rollback conhecido a alterações aleatórias em produção.
+
+## 9. Segurança operacional
 
 Antes de qualquer mudança relevante:
 
-1. verificar branch atual;
-2. verificar `git status`;
-3. garantir que não existem alterações locais inesperadas;
-4. criar branch específica;
-5. executar testes antes da mudança quando possível;
-6. alterar somente o escopo necessário;
-7. executar testes;
-8. revisar `git diff --check`;
-9. revisar o diff;
-10. registrar a alteração em commit;
-11. abrir PR quando aplicável;
-12. somente então integrar em `main`.
+1. confirmar branch/base;
+2. revisar estado atual no GitHub;
+3. criar branch específica;
+4. alterar somente o escopo necessário;
+5. executar testes disponíveis;
+6. revisar diff;
+7. verificar ausência de segredos;
+8. abrir PR;
+9. integrar somente após validação.
 
-## 9. Rotina de continuidade
+### Nunca fazer
 
-A versão final deste manual deverá incluir uma rotina operacional com pelo menos:
+- colocar service-role key no frontend;
+- desabilitar autorização apenas para “fazer funcionar”;
+- liberar RLS indiscriminadamente;
+- copiar payloads com dados de clientes para logs públicos;
+- apagar tabelas/buckets durante diagnóstico;
+- presumir que keepalive é backup;
+- presumir que backup funciona sem teste de restore.
 
-- verificação de saúde do sistema;
-- verificação dos últimos deployments;
-- verificação do banco;
-- verificação dos backups;
-- confirmação de que o último backup é legível;
-- teste periódico de restauração;
-- revisão de segredos e credenciais;
-- revisão de integrações externas;
-- atualização do inventário quando uma nova tecnologia for adicionada.
+## 10. Estado real dos módulos em 24/08/2026
 
-## 10. Regra de ouro
+| Módulo | Estado real em `main` |
+|---|---|
+| HOME-01 a HOME-07 | concluídos |
+| HOME-06 revisado | integrado |
+| AI-01 | concluído |
+| SEC-19 | concluído |
+| SEC-20 | concluído |
+| INST-04 | concluído |
+| AI-02 | **ainda não integrado à `main`**; branch `feat/ai-02-agent-dashboard` e PR #12 existem |
+| Backup externo DB | pendente |
+| Backup Storage | pendente |
+| Restore testado | pendente |
+| SEC-21 / LGPD | pendente |
+| E2E comercial | pendente |
+
+### Nota AI-02
+
+Durante a auditoria de continuidade foi encontrado que a branch AI-02 contém o trabalho validado, porém a `main` atual ainda não possui `meu-agente.html` nem a ação `list` correspondente em `api/agents.js`. O PR #12 permanece aberto/draft. Antes de integrar, revisar a branch porque há um texto de erro com mojibake (`Agente ? obrigat?rio.`) na implementação da ação `list`.
+
+## 11. Checklist mínimo pré-lançamento
+
+- [ ] AI-02 integrado de forma limpa e testada;
+- [ ] backup externo do DB implementado;
+- [ ] backup/estratégia do Storage implementada;
+- [ ] restore real testado;
+- [ ] inventário de secrets conferido na Vercel/GitHub;
+- [ ] SEC-21/LGPD concluído;
+- [ ] autenticação e recuperação de senha auditadas;
+- [ ] checkout Asaas testado em ambiente correto;
+- [ ] webhook Asaas testado;
+- [ ] IA/File Search testados com conta controlada;
+- [ ] Instagram validado no estágio efetivamente liberado;
+- [ ] jornada E2E executada;
+- [ ] smoke test em produção;
+- [ ] logs sem exposição de dados/segredos;
+- [ ] primeiro cliente piloto acompanhado.
+
+## 12. Regra de ouro
 
 **Se somente uma pessoa sabe como recuperar o sistema, a continuidade ainda não está pronta.**
 
-O objetivo deste manual é transformar o conhecimento do projeto em procedimento documentado, versionado e recuperável.
-
----
-
-## Estado atual — agosto de 2026
-
-- SEC-19 — política de privacidade: concluído.
-- SEC-20 — keepalive do Supabase sem criar uma função Vercel adicional: concluído e integrado à `main`.
-- INST-04 — fundação segura do webhook Instagram: PR #18 aprovado/mergeado em `main`.
-- Manual de manutenção/continuidade: **criado como documento-base; inventário e procedimentos de backup ainda serão completados durante as próximas etapas.**
-
-### Próximos trabalhos relacionados a este documento
-
-1. mapear todas as tabelas e políticas do Supabase;
-2. mapear buckets e arquivos críticos do Storage;
-3. inventariar todas as variáveis de ambiente sem registrar valores;
-4. documentar Vercel, GitHub, Supabase, Asaas, Meta/Instagram/WhatsApp e provedor de IA;
-5. implementar backup externo do banco;
-6. implementar backup externo do Storage;
-7. definir retenção e rotina de testes de restauração;
-8. realizar pelo menos um teste real de recuperação antes do lançamento;
-9. finalizar este manual com links operacionais e procedimentos passo a passo.
+Este manual deve ser atualizado toda vez que uma nova integração, variável, banco, bucket, domínio ou procedimento crítico entrar em produção.
