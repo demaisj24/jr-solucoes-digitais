@@ -4,8 +4,10 @@ import { readFileSync } from 'node:fs';
 
 const workflow = readFileSync(new URL('../.github/workflows/supabase-db-backup.yml', import.meta.url), 'utf8');
 
-test('OPS-02 v2: backup é diário para RPO de até 24h', () => {
-  assert.match(workflow, /cron:\s*"15 4 \* \* \*"/);
+test('OPS-02 v2: bootstrap é manual-only até o primeiro restore real', () => {
+  assert.match(workflow, /workflow_dispatch:/);
+  assert.equal(/\bschedule\s*:/.test(workflow), false);
+  assert.equal(/\bcron\s*:/.test(workflow), false);
 });
 
 test('OPS-02 v2: usa Supabase CLI fixada em 2.115.0, nunca latest', () => {
