@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const workflow = readFileSync(new URL('../.github/workflows/supabase-db-backup.yml', import.meta.url), 'utf8');
+const uploadMarker='uses: actions/upload-artifact@';
 
 test('OPS-02 v2: bootstrap é manual-only até o primeiro restore real', () => {
   assert.match(workflow, /workflow_dispatch:/);
@@ -49,18 +50,24 @@ test('OPS-02 v2: criptografa com GPG AES256 e passphrase via stdin', () => {
 
 test('OPS-02 v2: plaintext é removido antes do upload', () => {
   const remove = workflow.indexOf('rm -rf backup/plain backup/vencivo-backup.tar.gz');
-  const upload = workflow.indexOf('uses: actions/upload-artifact@v4');
+  const upload = workflow.indexOf(uploadMarker);
   assert.ok(remove >= 0 && upload > remove);
   assert.match(workflow, /test ! -e backup\/vencivo-backup\.tar\.gz/);
 });
 
 test('OPS-02 v2: artifact só leva bundle criptografado, checksum e metadata', () => {
-  const block = workflow.slice(workflow.indexOf('uses: actions/upload-artifact@v4'));
+  const start=workflow.indexOf(uploadMarker);
+  assert.ok(start>=0,'upload-artifact step deve existir');
+  const block = workflow.slice(start);
   assert.match(block, /backup\/vencivo-backup\.tar\.gz\.gpg/);
   assert.match(block, /backup\/vencivo-backup\.tar\.gz\.gpg\.sha256/);
   assert.match(block, /backup\/metadata\.json/);
   assert.equal(/\n\s+backup\/vencivo-backup\.tar\.gz\s*(?:\n|$)/.test(block), false);
   assert.equal(/backup\/plain\//.test(block), false);
+});
+
+test('OPS-02 v2: upload-artifact está pinado por commit imutável',()=>{
+  assert.match(workflow,/uses: actions\/upload-artifact@[0-9a-f]{40}/);
 });
 
 test('OPS-02 v2: retenção temporária do artifact é 30 dias', () => {
