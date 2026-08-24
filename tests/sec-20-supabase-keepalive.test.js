@@ -10,6 +10,8 @@ const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const workflowPath = path.join(root, '.github', 'workflows', 'supabase-keepalive.yml');
 const workflow = readFileSync(workflowPath, 'utf8');
 const vercelConfig = readFileSync(path.join(root, 'vercel.json'), 'utf8');
+const migrationPath = path.join(root, 'supabase', 'migrations', '20260824140203_sec20_plan_catalog_public_select_permissive.sql');
+const migration = readFileSync(migrationPath, 'utf8');
 
 test('SEC-20: workflow tem cron 2x por semana', () => {
   assert.match(workflow, /cron:\s*"0 9 \* \* 1,4"/);
@@ -58,4 +60,13 @@ test('SEC-20: nenhuma credencial literal no workflow', () => {
   assert.equal(/eyJ[A-Za-z0-9_-]{10,}/.test(workflow), false);
   assert.equal(/sb_(publishable|secret)_[A-Za-z0-9_-]+/.test(workflow), false);
   assert.equal(/SUPABASE_URL:\s*['"]https?:\/\//.test(workflow), false);
+});
+
+test('SEC-20: migration torna a policy publica explicitamente permissive', () => {
+  assert.match(migration, /create\s+policy\s+plan_catalog_public_active_select/i);
+  assert.match(migration, /as\s+permissive/i);
+  assert.match(migration, /for\s+select/i);
+  assert.match(migration, /to\s+anon\s*,\s*authenticated/i);
+  assert.match(migration, /using\s*\(\s*active\s*=\s*true\s*\)/i);
+  assert.equal(/insert|update|delete/i.test(migration.replace(/drop\s+policy/ig, '')), false);
 });
