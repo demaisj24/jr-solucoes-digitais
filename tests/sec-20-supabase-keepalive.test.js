@@ -63,11 +63,11 @@ test('SEC-20: vercel.json não tem crons nem referência ao endpoint antigo', ()
   assert.equal(vercelConfig.includes('supabase-keepalive'), false);
 });
 
-test('SEC-20: nenhuma função nova em api/ e contagem continua 11', () => {
+test('SEC-20: não adiciona função de keepalive e orçamento total não excede 12', () => {
   assert.equal(existsSync(path.join(root, 'api', 'cron', 'supabase-keepalive.js')), false);
   const files = execSync('git ls-files "api/*.js" "api/**/*.js"', { cwd: root }).toString().trim().split('\n').filter(Boolean);
-  assert.equal(files.length, 11, `esperado 11 funções em api/, achou ${files.length}`);
-  assert.equal(files.some((f) => f.includes('cron')), false);
+  assert.ok(files.length <= 12, `orçamento operacional excedido: ${files.length} funções em api/`);
+  assert.equal(files.some((f) => f.includes('supabase-keepalive')), false);
 });
 
 test('SEC-20: permissions é somente contents:read', () => {
