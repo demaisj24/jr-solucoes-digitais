@@ -2,8 +2,8 @@
 // (.github/workflows/supabase-keepalive.yml).
 //
 // Arquitetura oficial reconciliada: GitHub Actions (não Vercel Cron, não
-// Serverless Function), 2x/semana, chave anônima do Supabase contra
-// `plan_catalog`, nunca `agents`, nunca a service role.
+// Serverless Function), 2x/semana, publishable key moderna do Supabase contra
+// `plan_catalog`, nunca `agents`, nunca service_role/secret key.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -48,13 +48,21 @@ test('SEC-20: NÃO usa agents nem outras tabelas com dados de usuário', () => {
   assert.equal(/\/rest\/v1\/(agent_knowledge|profiles|subscriptions|usage_counters|instagram_connections)\b/.test(workflow), false);
 });
 
-test('SEC-20: SERVICE_ROLE não aparece em nenhuma forma', () => {
+test('SEC-20: SERVICE_ROLE e secret key não aparecem em nenhuma forma', () => {
   assert.equal(/SERVICE_ROLE/i.test(workflow), false);
+  assert.equal(/sb_secret_[A-Za-z0-9_-]+/.test(workflow), false);
 });
 
-test('SEC-20: usa SUPABASE_ANON_KEY', () => {
-  assert.match(workflow, /SUPABASE_ANON_KEY/);
-  assert.match(workflow, /secrets\.SUPABASE_ANON_KEY/);
+test('SEC-20: usa publishable key moderna e não depende de GitHub Secret', () => {
+  assert.match(workflow, /SUPABASE_PUBLISHABLE_KEY/);
+  assert.match(workflow, /sb_publishable_[A-Za-z0-9_-]+/);
+  assert.equal(/secrets\./.test(workflow), false);
+  assert.equal(/SUPABASE_ANON_KEY/.test(workflow), false);
+});
+
+test('SEC-20: publishable key é enviada somente no apikey, nunca como Bearer JWT', () => {
+  assert.match(workflow, /-H\s+"apikey:\s*\$\{SUPABASE_PUBLISHABLE_KEY\}"/);
+  assert.equal(/Authorization:\s*Bearer/i.test(workflow), false);
 });
 
 test('SEC-20: vercel.json não tem crons nem referência ao endpoint antigo', () => {
@@ -92,10 +100,10 @@ test('SEC-20: HTTP >= 400 falha e shell propaga a falha', () => {
   assert.match(workflow, /set\s+-e/);
 });
 
-test('SEC-20: nenhuma credencial literal no workflow', () => {
-  assert.equal(/eyJ[A-Za-z0-9_-]{10,}/.test(workflow), false);
-  assert.equal(/sb_(publishable|secret)_[A-Za-z0-9_-]+/.test(workflow), false);
-  assert.equal(/SUPABASE_URL:\s*['"]https?:\/\//.test(workflow), false);
+test('SEC-20: nenhuma credencial privilegiada literal no workflow', () => {
+  assert.equal(/eyJ[A-Za-z0-9_-]{10,}/.test(workflow), false, 'legacy JWT não deve aparecer');
+  assert.equal(/sb_secret_[A-Za-z0-9_-]+/.test(workflow), false, 'secret key não deve aparecer');
+  assert.equal(/SERVICE_ROLE/i.test(workflow), false, 'service role não deve aparecer');
 });
 
 test('SEC-20: nenhum outro mecanismo de keepalive equivalente no repositório', () => {
