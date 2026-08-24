@@ -1,6 +1,6 @@
 # VENCIVO — MASTER STATE
 
-**Data de atualização:** 23/08/2026
+**Data de atualização:** 24/08/2026
 **Repositório oficial:** `demaisj24/jr-solucoes-digitais`
 **Branch de produção:** `main`
 **Vercel:** `vencivo-ai`
@@ -9,206 +9,217 @@
 > Fonte resumida e permanente do estado do projeto. Atualizar após cada módulo relevante.
 
 ## 1. Produto
-Vencivo Atendimento Inteligente / Vencivo AI é um SaaS para criação de agentes de IA personalizados para empresas.
 
-Posicionamento aprovado: não vender como simples chatbot, mas como agente de IA para o negócio, com conhecimento da empresa, atendimento, qualificação e encaminhamento humano.
+VENCIVO AI é um SaaS para criação de agentes de IA personalizados para empresas.
 
-Proposta central: o cliente configura o negócio, fornece conhecimento real e cria um agente que responde aos clientes com a personalidade da marca. A evolução planejada inclui atuação nos canais do negócio, especialmente Instagram e WhatsApp, quando as integrações estiverem liberadas e aprovadas.
+Posicionamento: agente de IA para o negócio, com conhecimento da empresa, atendimento, qualificação e encaminhamento humano. A evolução inclui canais como Instagram e WhatsApp quando as integrações estiverem tecnicamente prontas e aprovadas.
 
-## 2. Estado técnico atual
-### CONCLUÍDO
-- Home/HOME-01 a HOME-07 publicados;
+## 2. Estado técnico em `main`
+
+### Concluído/integrado
+
+- HOME-01 a HOME-07;
+- HOME-06 revisado e integrado;
 - criador de agente;
-- empresa/segmento/serviços;
-- personalidade selecionável;
-- capacidades;
-- criação e persistência do agente;
-- Supabase;
+- persistência Supabase;
+- autenticação Supabase;
 - Vercel;
 - Gemini;
-- Base de Conhecimento;
+- AI-01 — Base de Conhecimento;
 - File Search por agente;
 - chat com conhecimento real;
-- AI-01 concluído e integrado na `main`;
 - SEC-19 — política de privacidade mínima;
-- SEC-20 — keepalive do Supabase via GitHub Actions, sem consumir uma função Serverless adicional da Vercel;
-- INST-04 — fundação segura do webhook Instagram, integrada na `main`.
+- SEC-20 — keepalive Supabase via GitHub Actions;
+- INST-04 — fundação segura do webhook Instagram;
+- documentação de continuidade inicial.
 
-### AI-01 — Base de Conhecimento do Agente — CONCLUÍDO
-Implementado e validado:
+### AI-01 — concluído
+
+Preservar sem reabrir sem evidência de regressão:
+
 - upload privado de documentos;
 - PDF, DOC, DOCX, TXT, MD, CSV e RTF;
 - Gemini File Search por agente;
 - isolamento por agente/public_id;
 - recuperação semântica;
-- fallback textual para conhecimento compatível;
-- chat utilizando conhecimento real;
+- fallback textual compatível;
 - proteção contra exposição de prompt/credenciais;
-- regras contra prompt injection em documentos;
-- modelo validado: `gemini-3.5-flash-lite`.
+- regras contra prompt injection em documentos.
 
-Teste real aprovado com:
-`Corte Premium VX` / `R$ 147,00` / `VX-8472`.
+## 3. AI-02 — status corrigido
 
-Testes aprovados:
-- preço;
-- código;
-- serviços/produtos;
-- informação inexistente sem invenção;
-- prompt injection;
-- contexto;
-- isolamento funcional;
-- upload/indexação/recuperação/resposta.
+**AI-02 ainda não está integrado à `main`.**
 
-Integração:
-- PR #11 — AI-01 integração final na main;
-- merge concluído;
-- commit `cc4ce75dfed93285ee2a8b5e4879c920740f88a0`.
+Existe trabalho validado na branch:
 
-**Não reabrir AI-01 sem evidência de regressão.**
+`feat/ai-02-agent-dashboard`
 
-### SEC-19 — Privacidade — CONCLUÍDO
-- Política mínima publicada em `politica-privacidade.html`;
-- canal de contato definido;
-- solicitações de acesso/correção/exclusão previstas;
-- não registrar segredos no documento.
+PR existente:
 
-### SEC-20 — Disponibilidade Supabase — CONCLUÍDO
-- keepalive removido das funções Vercel para preservar o orçamento de funções;
-- rotina transferida para GitHub Actions;
-- execução agendada duas vezes por semana;
-- credenciais usadas somente via GitHub Secrets;
-- teste de regressão do keepalive criado;
-- workflow integrado à `main`.
+`#12 — AI-02 — Dashboard e Meu Agente`
 
-**Importante:** keepalive não é backup.
+Conteúdo da branch:
 
-### INST-04 — Webhook Instagram — CONCLUÍDO
-- GET de verificação Meta;
-- HMAC-SHA256 com comparação em tempo constante;
-- rejeição de assinatura ausente/inválida;
-- limite de payload;
-- aceitação somente de eventos `object: instagram`;
-- nenhum processamento de IA no webhook de fundação;
-- nenhum payload bruto persistido nessa camada;
-- comportamento determinístico para duplicatas;
-- 15 testes de regressão aprovados.
+- `meu-agente.html`;
+- link `Gerenciar` no dashboard;
+- listagem de metadados de documentos;
+- `action=list` em `api/agents.js`;
+- testes AI-02.
 
-## 3. Próximo módulo — AI-02
-**Objetivo:** transformar o núcleo funcional em produto SaaS utilizável e vendável.
+A branch foi testada anteriormente, porém ficou divergente da `main` e contém mojibake na mensagem de erro da ação `list` (`Agente ? obrigat?rio.`). Não fazer merge direto do PR #12 sem reconstrução/revisão limpa sobre a `main` atual.
 
-Ordem inicial:
-1. Dashboard mínimo pós-criação;
-2. listar agentes;
-3. abrir/configurar agente;
-4. editar dados;
-5. visualizar/gerenciar conhecimento;
-6. histórico/conversas;
-7. teste do agente;
-8. medir latência por etapa;
-9. streaming quando seguro;
-10. Fast Path para perguntas simples quando comprovado por medição.
+### Próximo passo AI-02
 
-## 4. Linha paralela — Instagram
-INST-04 está concluído, mas o processamento completo de mensagens não deve ser implementado antes da identidade/OAuth estar definida.
+Criar branch nova a partir de `main`, reaplicar somente:
 
-Próxima sequência:
-1. Instagram Business Login / OAuth;
-2. callback real do VENCIVO;
+1. `meu-agente.html`;
+2. link `Gerenciar` em `conta.html`;
+3. `action=list` segura em `api/agents.js`;
+4. testes AI-02;
+5. corrigir encoding;
+6. executar regressão SEC-14/SEC-17/Instagram;
+7. integrar via PR.
+
+## 4. Instagram
+
+INST-04 está concluído.
+
+Ainda pendente para mensageria real:
+
+1. Business Login/OAuth;
+2. callback real;
 3. troca segura de código por token;
 4. persistência de `instagram_connections`;
 5. resolução `instagram_user_id → agent_id → owner_id`;
-6. idempotência de eventos;
+6. idempotência persistente;
 7. processamento de mensagens;
-8. resposta via Instagram Send API.
+8. resposta via API Meta.
 
-A Meta deve receber somente uma URL de callback que exista e esteja implementada no VENCIVO. Não cadastrar URL inventada.
+Não cadastrar callback inventado na Meta.
 
-## 5. Performance
-A latência foi identificada como próxima frente técnica, mas não deve quebrar o AI-01.
+## 5. Billing
 
-Medir antes de otimizar:
-- tempo total;
-- tempo Gemini;
-- File Search;
-- Supabase;
-- primeira resposta percebida;
-- erros 429/502/503;
-- comportamento sob concorrência.
+Código Asaas existe para checkout, webhook, assinatura e cancelamento. Antes de lançamento:
 
-## 6. Monetização
-Depois do AI-02:
-- planos finais;
-- checkout/assinatura;
-- ativação após pagamento;
-- limites por plano;
-- cancelamento/renovação/inadimplência;
-- medição de uso/custo.
+- validar sandbox × produção;
+- testar checkout E2E;
+- testar webhook real;
+- testar ativação, inadimplência, cancelamento e reembolso conforme regra comercial;
+- conferir atualização consistente do status do agente.
 
-## 7. Segurança e produção
-Antes de escala maior:
+## 6. Segurança
+
+Já há gates relevantes de rate limiting, tenant isolation e webhook Instagram.
+
+Antes do lançamento executar auditoria final de:
+
 - autenticação;
-- RLS/isolamento;
-- APIs;
-- rate limiting;
-- documentos maliciosos/prompt injection;
-- segredos;
-- testes E2E;
-- carga/concurrency;
-- monitoramento;
-- custos;
-- LGPD/termos/políticas;
-- SEO/analytics/onboarding;
-- PWA/service worker.
+- recuperação de senha;
+- autorização;
+- RLS;
+- tenant isolation;
+- CORS;
+- uploads;
+- secrets;
+- logs;
+- rate limits;
+- abuso/concurrency;
+- prompt injection;
+- pagamentos;
+- LGPD.
 
-## 8. Continuidade, manutenção e backup — REQUISITO PERMANENTE
-O sistema deverá terminar acompanhado de um manual que permita a uma pessoa sem conhecimento profundo do desenvolvimento localizar, diagnosticar, corrigir ou recuperar o sistema.
+## 7. Continuidade e backup
 
 Documento oficial:
+
 `docs/OPERACAO-MANUTENCAO-E-BACKUP.md`
 
-O manual deverá manter:
-- mapa do GitHub;
-- mapa da Vercel;
-- mapa do Supabase;
-- tabelas, RLS e Storage;
-- integrações externas;
-- inventário das variáveis de ambiente sem valores secretos;
-- procedimentos de diagnóstico;
-- rollback;
-- recuperação;
-- backup do PostgreSQL;
-- backup independente do Storage;
-- retenção de backups;
-- teste periódico de restauração.
+Requisitos permanentes:
 
-**Regra:** código, banco, Storage e configuração não podem depender de uma única cópia ou de conhecimento informal de uma única pessoa.
+- código versionado;
+- backup DB externo;
+- backup/estratégia Storage;
+- retenção;
+- restore real testado;
+- inventário de variáveis sem valores secretos;
+- rollback documentado;
+- troubleshooting para pessoa não técnica.
 
-Segredos nunca devem ser gravados neste documento ou no Git.
+**Keepalive não é backup.**
 
-## 9. Estratégia comercial
+## 8. Infraestrutura atual
+
+- GitHub: `demaisj24/jr-solucoes-digitais`;
+- produção Git: `main`;
+- Vercel: `vencivo-ai`;
+- domínio: `https://vencivo.com.br`;
+- preview: `https://vencivo-ai.vercel.app`;
+- Supabase project ref: `uxmlmyhiagjefuufanyg`;
+- Supabase URL: `https://uxmlmyhiagjefuufanyg.supabase.co`;
+- keepalive: `.github/workflows/supabase-keepalive.yml`.
+
+## 9. Variáveis críticas conhecidas
+
+Sem valores no Git:
+
+- `SUPABASE_SERVICE_ROLE_KEY`;
+- `SUPABASE_URL`;
+- `GEMINI_API_KEY`;
+- `ASAAS_API_KEY`;
+- `ASAAS_API_URL`;
+- `ASAAS_WEBHOOK_TOKEN`;
+- `SITE_URL`;
+- `INSTAGRAM_WEBHOOK_VERIFY_TOKEN`;
+- `INSTAGRAM_APP_SECRET`.
+
+## 10. Ordem oficial até lançar
+
+1. OPS-01 — consolidar manual operacional;
+2. reconstruir/integrar AI-02;
+3. backup DB;
+4. backup/retensão Storage;
+5. restore real;
+6. inventário de infraestrutura/secrets;
+7. SEC-21/LGPD;
+8. autenticação/segurança final;
+9. billing E2E;
+10. IA/File Search E2E;
+11. Instagram no estágio real disponível;
+12. jornada E2E completa;
+13. deploy/smoke test;
+14. primeiro usuário pagante.
+
+## 11. Estratégia comercial
+
 MVP comercial desejado:
-`criar agente → configurar → fornecer conhecimento → testar → escolher plano → pagar → usar`.
 
-Primeira meta: conseguir os primeiros 5 clientes e validar o produto com venda manual antes de escalar aquisição.
+`criar agente → configurar → fornecer conhecimento → testar → escolher plano → pagar → usar`
 
-## 10. HOME
-HOME-01 a HOME-07 concluídos/publicados.
-HOME-08 continua separado de `main` até decisão específica.
+Primeira meta: 5 clientes e validação comercial antes de escalar aquisição.
 
-## 11. Meta técnica
-Preservar funcionalidades existentes. Nunca alterar `main` sem análise e aprovação quando o trabalho envolver mudança relevante. Fazer patches localizados, testar e só então integrar.
+## 12. Regra de conclusão
 
-## 12. Próximo ponto oficial
-**AI-02 — Dashboard mínimo + experiência pós-criação do agente.**
+O sistema não está “pronto” apenas porque testes unitários passam.
 
-A linha Instagram permanece paralela e não deve bloquear a construção do produto principal.
+Lançamento exige evidência de:
+
+- segurança;
+- autorização/tenant isolation;
+- backup + restore;
+- billing;
+- IA;
+- integrações;
+- LGPD;
+- deploy;
+- E2E;
+- smoke test de produção.
 
 ## 13. Referências permanentes
-- `VENCIVO-HANDOFF.md`
-- `VENCIVO-ROADMAP.md`
-- `VENCIVO-PROTOCOLO-DE-TRABALHO.md`
-- `VENCIVO-META-INSTAGRAM-HANDOFF-2026-08-18.md`
-- `CONTEXTO-VENCIVO-CONTINUACAO.md`
-- `VENCIVO-INSTAGRAM-WEBHOOK-CONTINUITY.md`
-- `docs/OPERACAO-MANUTENCAO-E-BACKUP.md`
+
+- `VENCIVO-CONTINUITY.md`;
+- `docs/OPERACAO-MANUTENCAO-E-BACKUP.md`;
+- `VENCIVO-HANDOFF.md`;
+- `VENCIVO-ROADMAP.md`;
+- `VENCIVO-PROTOCOLO-DE-TRABALHO.md`;
+- `VENCIVO-INSTAGRAM-WEBHOOK-CONTINUITY.md`;
+- `VENCIVO-META-INSTAGRAM-HANDOFF-2026-08-18.md`.

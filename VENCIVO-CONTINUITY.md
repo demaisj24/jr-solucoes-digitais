@@ -1,79 +1,96 @@
 # VENCIVO — CONTINUIDADE MESTRA
 
-> **Checkpoint operacional:** 23/08/2026
+> **Checkpoint operacional:** 24/08/2026
 > **Objetivo:** permitir retomar o projeto mesmo se a conversa do ChatGPT for encerrada ou apagada.
 
 ## Ponto exato de retomada
 
-O VENCIVO está em fase de **hardening, documentação e preparação para produção**. O HOME-06 foi concluído, publicado e integrado à `main`.
+O VENCIVO está em fase de **hardening, documentação, recuperação e preparação para produção**.
 
-Último trabalho concluído:
-- HOME-06 — melhoria visual e UX do formulário de contato.
-- Commit de feature: `58f9745`.
-- PR integrado à `main`: merge `30d8390031568a2dc2bd3ede570c826f5240b852`.
-- Branch de trabalho: `feat/home-06-contact-form`.
+Últimos trabalhos concluídos em `main`:
 
-**Próxima ação:** auditar o estado mestre do projeto e continuar os gates de produção, começando pela documentação/continuidade e depois pelos gates de backup, recuperação, LGPD e lançamento.
+- HOME-06 — melhoria visual e UX do formulário de contato;
+- merge HOME-06: `30d8390031568a2dc2bd3ede570c826f5240b852`;
+- checkpoint de continuidade: `d4f4bef8482f95a67bb95ecadccac8e3f62020f4`.
 
-## O que já foi construído / fechado
+### Correção importante encontrada em 24/08/2026
 
-| Área | Estado | Evidência / observação |
-|---|---|---|
-| Landing page / HOME | CONCLUÍDO | `index.html` em produção de código; HOME-06 integrado na `main`. |
-| HOME-06 formulário | CONCLUÍDO | Melhorias de labels, campos, responsividade, CTA WhatsApp/e-mail e nota informativa. |
-| Dashboard / Meu Agente | CONCLUÍDO | `meu-agente.html` e integração com dashboard existentes. |
-| AI-02 listagem de documentos | CONCLUÍDO | Listagem segura de metadados, sem retornar conteúdo dos documentos. |
-| Gemini File Search | CONSTRUÍDO + HARDENING | Criação de store e processamento isolados em funções protegidas. |
-| SEC-14 | FECHADO | Rate limits, gates de processamento e proteções de File Search testados. |
-| SEC-17 tenant isolation | FECHADO | Rotas de knowledge exigem autenticação e proprietário do agente. |
-| Instagram webhook | TESTADO | Suite com 15 testes passou; assinatura, verify token, payload inválido, duplicidade e limites cobertos. |
-| SEC-20 Supabase Keepalive | FECHADO | Keepalive validado; não substitui backup. |
-| Documentação de manutenção | EM ANDAMENTO | Deve ser consolidada no repositório e mantida junto do sistema. |
+O AI-02 foi desenvolvido e testado na branch `feat/ai-02-agent-dashboard`, mas **não foi integrado à `main`**.
 
-## O que ainda falta antes do lançamento ao usuário final
+Evidência:
 
-| Gate | O que fazer | Status |
-|---|---|---|
-| 1. Documentação mestre | Consolidar arquitetura, deploy, manutenção, troubleshooting e continuidade. | PRÓXIMO |
-| 2. Backup do Supabase DB | Definir backup confiável e procedimento operacional. | PENDENTE |
-| 3. Backup do Storage | Garantir estratégia para arquivos/documentos enviados. | PENDENTE |
-| 4. Disaster Recovery | Fazer restauração real/testada; não considerar backup confiável sem restore testado. | PENDENTE |
-| 5. Inventário de infraestrutura/secrets | Mapear Supabase, Vercel, Gemini, Instagram e secrets necessários, sem registrar valores secretos. | PENDENTE |
-| 6. LGPD / SEC-21 | Inventariar dados pessoais, fluxos, retenção, exclusão/correção/exportação e auditoria. | PRÓXIMO BLOCO |
-| 7. Autenticação final | Auditoria de credenciais, senhas fracas, recuperação e proteção de sessão para produção. | PENDENTE / AUDITORIA FINAL |
-| 8. Billing/assinaturas | Validar fluxo comercial, plano, pagamento, status de assinatura e bloqueios. | PENDENTE |
-| 9. IA em produção | Validar criação do agente, conhecimento, consultas, limites, erros e custos reais. | PENDENTE |
-| 10. Instagram em produção | Validar configuração real, webhook, assinatura, idempotência e tratamento de falhas. | PENDENTE |
-| 11. E2E | Testar jornada completa: cadastro → agente → conhecimento → uso → cobrança → operação. | PENDENTE |
-| 12. Segurança final | Revisar autorização, tenant isolation, rate limits, exposição de secrets, CORS, uploads e abuso. | PENDENTE |
-| 13. Observabilidade | Garantir logs úteis, erros rastreáveis e métricas mínimas sem vazar dados sensíveis. | PENDENTE |
-| 14. Deploy/produção | Validar variáveis, domínio, HTTPS, funções serverless, Supabase e Vercel. | PENDENTE |
-| 15. Smoke test de produção | Executar testes reais com uma conta de teste e dados controlados. | PENDENTE |
-| 16. Lançamento | Liberar para primeiro usuário pagante e acompanhar operação. | ÚLTIMO GATE |
+- PR #12 permanece aberto e em draft;
+- branch AI-02 está 2 commits à frente e 2 atrás da `main` no checkpoint;
+- arquivos/alterações que ainda não estão em `main`: `meu-agente.html`, link `Gerenciar` em `conta.html`, `action=list` em `api/agents.js` e `tests/ai-02-agent-dashboard.test.js`;
+- a branch antiga contém mojibake na mensagem `Agente ? obrigat?rio.` e deve ser reconstruída/limpa antes de integração.
 
-## Ordem recomendada até começar a ganhar dinheiro
+**Não considerar AI-02 concluído em produção até um novo PR limpo ser integrado.**
 
-1. Fechar documentação e continuidade.
-2. Fechar backup + restore do Supabase DB e Storage.
-3. Fazer inventário de infraestrutura e secrets.
-4. Executar SEC-21/LGPD.
-5. Auditoria final de autenticação e segurança.
-6. Validar billing/assinatura e limites comerciais.
-7. Validar IA/File Search com dados reais controlados.
-8. Validar Instagram em ambiente real.
-9. Rodar E2E completo.
-10. Fazer deploy/smoke test de produção.
-11. Abrir para o primeiro usuário pagante.
-12. Corrigir apenas problemas bloqueadores encontrados no uso real.
-13. Começar aquisição/vendas enquanto a operação inicial é monitorada.
+## Estado resumido
 
-## Regra de conclusão
+| Área | Estado real |
+|---|---|
+| Landing/HOME | concluído |
+| HOME-06 | integrado |
+| AI-01 | concluído |
+| Gemini File Search | construído/hardened |
+| SEC-14 | fechado |
+| SEC-17 | fechado |
+| SEC-19 | fechado |
+| SEC-20 | fechado |
+| INST-04 Instagram webhook | fechado |
+| AI-02 | branch/testes existem; **integração em `main` pendente** |
+| Manual operacional | OPS-01 em andamento |
+| Backup DB | pendente |
+| Backup Storage | pendente |
+| Restore testado | pendente |
+| SEC-21/LGPD | pendente |
+| Billing E2E | pendente |
+| Lançamento | pendente |
 
-O VENCIVO **não deve ser considerado terminado apenas porque os testes unitários passam**. Para lançamento, todos os gates críticos precisam estar validados: segurança, autorização/tenant isolation, IA, integrações, backup/restore, LGPD, billing, deploy e jornada E2E.
+## Ordem atual até o lançamento
 
-## Arquivos locais não rastreados no checkpoint anterior
+1. concluir OPS-01/documentação operacional;
+2. reconstruir/integrar AI-02 sobre a `main` atual, sem mojibake;
+3. implementar estratégia de backup do Supabase DB;
+4. implementar estratégia de backup/retensão do Storage;
+5. executar teste real de restore;
+6. fechar inventário de infraestrutura/secrets;
+7. executar SEC-21/LGPD;
+8. auditoria final de autenticação/segurança;
+9. validar billing/Asaas;
+10. validar IA/File Search em jornada real;
+11. validar estágio real do Instagram;
+12. rodar E2E completo;
+13. deploy/smoke test;
+14. liberar primeiro usuário pagante.
 
-Não adicionar automaticamente ao Git. Primeiro determinar a finalidade de cada item:
+## Manual oficial
+
+Documento operacional permanente:
+
+`docs/OPERACAO-MANUTENCAO-E-BACKUP.md`
+
+Deve ser atualizado quando qualquer componente crítico mudar.
+
+## Regra de backup
+
+Keepalive não é backup.
+
+Backup só será considerado confiável quando:
+
+- existir fora do ambiente de produção;
+- houver retenção definida;
+- sua integridade puder ser verificada;
+- uma restauração real em ambiente separado tiver sido concluída com sucesso.
+
+## Segurança
+
+Não registrar valores de segredos no Git. Registrar apenas nomes, finalidade e local de administração.
+
+## Arquivos locais observados no computador anterior
+
+Não adicionar automaticamente ao Git quando voltar ao computador original:
 
 - `dfq`
 - `sec14-local.patch`
@@ -82,7 +99,13 @@ Não adicionar automaticamente ao Git. Primeiro determinar a finalidade de cada 
 - `tests/sec-14-ensure-store-cas.test.js`
 - `tests/sec-20-supabase-keepalive.test.js`
 
-## Comandos úteis para retomada
+Primeiro comparar cada item com `main` e identificar sua finalidade.
+
+## Retomada em qualquer computador
+
+Não é obrigatório ter o repositório clonado para saber o estado. A fonte oficial é o GitHub.
+
+Quando houver acesso local:
 
 ```powershell
 git checkout main
@@ -91,14 +114,15 @@ git status --short
 git log --oneline --decorate -10
 ```
 
-Depois verificar este arquivo:
+Depois ler:
 
 ```powershell
 Get-Content VENCIVO-CONTINUITY.md
+Get-Content docs/OPERACAO-MANUTENCAO-E-BACKUP.md
 ```
 
-## Princípio operacional
+## Próximo checkpoint esperado
 
-Não apagar, sobrescrever ou incorporar artefatos de segurança sem antes identificar a origem e comparar com `main`. Cada gate deve terminar com evidência: teste, revisão, commit/PR ou procedimento documentado.
-
-**Próximo checkpoint esperado:** após concluir o bloco de documentação/backup/restore e iniciar SEC-21.
+- OPS-01 integrado;
+- AI-02 reconstruído sobre `main` atual e integrado;
+- backup/restore iniciado.
