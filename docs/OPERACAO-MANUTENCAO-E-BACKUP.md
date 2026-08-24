@@ -73,7 +73,16 @@ Agenda atual:
 - quinta-feira às 09:00 UTC;
 - execução manual via `workflow_dispatch`.
 
-O workflow faz uma consulta mínima em `agents` e usa GitHub Secrets. **Keepalive não é backup.**
+Arquitetura oficial do SEC-20:
+
+- GitHub Actions chama diretamente a REST API do Supabase;
+- usa `SUPABASE_ANON_KEY`, nunca `SUPABASE_SERVICE_ROLE_KEY`;
+- consulta somente `plan_catalog?select=code&active=eq.true&limit=1`;
+- não consulta `agents` nem tabelas com dados de usuário;
+- não cria Vercel Cron nem nova Serverless Function;
+- timeouts e falha HTTP são explícitos.
+
+**Keepalive não é backup.** Ele reduz o risco de pausa por inatividade, mas não protege contra perda, corrupção ou exclusão de dados.
 
 ## 4. Inventário de variáveis de ambiente
 
@@ -81,8 +90,9 @@ Não registrar valores neste arquivo.
 
 | Variável | Uso | Onde deve existir | Sensível |
 |---|---|---|---|
-| `SUPABASE_SERVICE_ROLE_KEY` | acesso privilegiado do backend ao Supabase | Vercel; GitHub Actions quando necessário | SIM |
+| `SUPABASE_SERVICE_ROLE_KEY` | acesso privilegiado do backend ao Supabase | Vercel | SIM |
 | `SUPABASE_URL` | URL do Supabase usada pelo keepalive | GitHub Actions | não contém credencial, mas administrar como configuração |
+| `SUPABASE_ANON_KEY` | leitura pública mínima do `plan_catalog` no keepalive | GitHub Actions | chave pública de baixo privilégio; não imprimir em logs |
 | `GEMINI_API_KEY` | Gemini / File Search | Vercel | SIM |
 | `ASAAS_API_KEY` | chamadas à API Asaas | Vercel | SIM |
 | `ASAAS_API_URL` | permite fixar sandbox/produção | Vercel | NÃO, mas deve corresponder à chave |
@@ -95,6 +105,8 @@ Não registrar valores neste arquivo.
 
 - segredos nunca em HTML, documentação, issue, commit ou mensagem de log;
 - frontend só pode receber chaves públicas adequadas ao navegador;
+- usar sempre a credencial de menor privilégio suficiente para a tarefa;
+- `SUPABASE_SERVICE_ROLE_KEY` nunca deve ser usada em keepalive ou rotina que possa funcionar com chave pública/RLS;
 - rotação de segredo deve ser feita no provedor e depois no ambiente de produção;
 - após rotação, executar smoke test do fluxo correspondente.
 
@@ -111,7 +123,8 @@ Teste operacional:
 3. verificar Auth;
 4. verificar tabelas principais;
 5. verificar Storage;
-6. executar apenas consultas de leitura durante diagnóstico inicial.
+6. executar apenas consultas de leitura durante diagnóstico inicial;
+7. verificar o último run de `.github/workflows/supabase-keepalive.yml` quando houver dúvida de disponibilidade.
 
 Sintomas comuns:
 
@@ -285,6 +298,7 @@ Antes de qualquer mudança relevante:
 ### Nunca fazer
 
 - colocar service-role key no frontend;
+- usar service-role quando uma chave pública/RLS suficiente resolver a mesma tarefa;
 - desabilitar autorização apenas para “fazer funcionar”;
 - liberar RLS indiscriminadamente;
 - copiar payloads com dados de clientes para logs públicos;
@@ -300,13 +314,14 @@ Antes de qualquer mudança relevante:
 | HOME-06 revisado | integrado |
 | AI-01 | concluído |
 | SEC-19 | concluído |
-| SEC-20 | concluído |
+| SEC-20 | keepalive existente em `main`; reconciliação de menor privilégio em revisão na PR correspondente |
 | INST-04 | concluído |
 | AI-02 | **ainda não integrado à `main`**; branch `feat/ai-02-agent-dashboard` e PR #12 existem |
+| Manual operacional | criado e integrado; deve ser atualizado a cada mudança crítica |
 | Backup externo DB | pendente |
 | Backup Storage | pendente |
 | Restore testado | pendente |
-| SEC-21 / LGPD | pendente |
+| Inventário de secrets conferido | pendente |
 | E2E comercial | pendente |
 
 ### Nota AI-02
@@ -316,11 +331,11 @@ Durante a auditoria de continuidade foi encontrado que a branch AI-02 contém o 
 ## 11. Checklist mínimo pré-lançamento
 
 - [ ] AI-02 integrado de forma limpa e testada;
+- [ ] SEC-20 reconciliado na `main` com chave anônima + `plan_catalog`;
 - [ ] backup externo do DB implementado;
 - [ ] backup/estratégia do Storage implementada;
 - [ ] restore real testado;
 - [ ] inventário de secrets conferido na Vercel/GitHub;
-- [ ] SEC-21/LGPD concluído;
 - [ ] autenticação e recuperação de senha auditadas;
 - [ ] checkout Asaas testado em ambiente correto;
 - [ ] webhook Asaas testado;
