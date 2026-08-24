@@ -1,0 +1,86 @@
+name: Supabase DB Backup
+
+on:
+  schedule:
+    - cron: "15 4 * * 0,3"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Validate backup secrets
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          test -n "${SUPABASE_DB_URL}" || { echo "SUPABASE_DB_URL is not configured" >&2; exit 1; }
+          test -n "${BACKUP_ENCRYPTION_PASSPHRASE}" || { echo "BACKUP_ENCRYPTION_PASSPHRASE is not configured" >&2; exit 1; }
+          test "${#BACKUP_ENCRYPTION_PASSPHRASE}" -ge 24 || { echo "BACKUP_ENCRYPTION_PASSPHRASE must have at least 24 characters" >&2; exit 1; }
+
+      - name: Install PostgreSQL client
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo apt-get install -y postgresql-client
+          pg_dump --version
+          pg_restore --version
+
+      - name: Create and validate logical dump
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p backup
+          pg_dump \
+            --dbname="${SUPABASE_DB_URL}" \
+            --format=custom \
+            --compress=9 \
+            --no-owner \
+            --no-privileges \
+            --file=backup/vencivo.dump
+          test -s backup/vencivo.dump
+          pg_restore --list backup/vencivo.dump >/dev/null
+
+      - name: Encrypt backup and remove plaintext
+        env:
+          BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          umask 077
+          openssl enc -aes-256-cbc -salt -pbkdf2 -iter 250000 \
+            -in backup/vencivo.dump \
+            -out backup/vencivo.dump.enc \
+            -pass env:BACKUP_ENCRYPTION_PASSPHRASE
+          rm -f backup/vencivo.dump
+          test -s backup/vencivo.dump.enc
+          sha256sum backup/vencivo.dump.enc > backup/vencivo.dump.enc.sha256
+          printf '{"created_at":"%s","format":"pg_dump custom","encryption":"AES-256-CBC PBKDF2","repository":"%s","commit":"%s"}\n' \
+            "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            "${GITHUB_REPOSITORY}" \
+            "${GITHUB_SHA}" > backup/metadata.json
+
+      - name: Upload encrypted backup
+        uses: actions/upload-artifact@v4
+        with:
+          name: vencivo-supabase-db-${{ github.run_id }}
+          path: |
+            backup/vencivo.dump.enc
+            backup/vencivo.dump.enc.sha256
+            backup/metadata.json
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Ensure plaintext is absent
+        if: always()
+        run: |
+          set -euo pipefail
+          test ! -e backup/vencivo.dump
