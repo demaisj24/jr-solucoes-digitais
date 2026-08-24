@@ -79,6 +79,7 @@ Arquitetura oficial do SEC-20:
 - usa `SUPABASE_ANON_KEY`, nunca `SUPABASE_SERVICE_ROLE_KEY`;
 - consulta somente `plan_catalog?select=code&active=eq.true&limit=1`;
 - não consulta `agents` nem tabelas com dados de usuário;
+- a policy `plan_catalog_public_active_select` precisa ser `PERMISSIVE` para conceder a leitura pública pretendida; essa correção é rastreada pela migration `20260824140203_sec20_plan_catalog_public_select_permissive.sql`;
 - não cria Vercel Cron nem nova Serverless Function;
 - timeouts e falha HTTP são explícitos.
 
@@ -322,6 +323,7 @@ Antes de qualquer mudança relevante:
 | Backup Storage | pendente |
 | Restore testado | pendente |
 | Inventário de secrets conferido | pendente |
+| SEC-21 / LGPD | pendente como conformidade técnica/legal; não requer UX intrusiva |
 | E2E comercial | pendente |
 
 ### Nota AI-02
@@ -336,6 +338,7 @@ Durante a auditoria de continuidade foi encontrado que a branch AI-02 contém o 
 - [ ] backup/estratégia do Storage implementada;
 - [ ] restore real testado;
 - [ ] inventário de secrets conferido na Vercel/GitHub;
+- [ ] SEC-21/LGPD concluído como requisito técnico/legal;
 - [ ] autenticação e recuperação de senha auditadas;
 - [ ] checkout Asaas testado em ambiente correto;
 - [ ] webhook Asaas testado;
