@@ -1,0 +1,104 @@
+name: Supabase DB Backup
+
+# Backup logico diario do PostgreSQL. Esta rotina fica inativa enquanto a PR
+# estiver em draft e so deve ser integrada depois que os secrets forem criados
+# e um restore real em ambiente separado for planejado.
+on:
+  schedule:
+    - cron: "15 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vencivo-supabase-db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Validate backup secrets
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          test -n "${SUPABASE_DB_URL}" || { echo "SUPABASE_DB_URL is not configured" >&2; exit 1; }
+          test -n "${BACKUP_ENCRYPTION_PASSPHRASE}" || { echo "BACKUP_ENCRYPTION_PASSPHRASE is not configured" >&2; exit 1; }
+          test "${#BACKUP_ENCRYPTION_PASSPHRASE}" -ge 32 || { echo "BACKUP_ENCRYPTION_PASSPHRASE must have at least 32 characters" >&2; exit 1; }
+
+      - name: Verify pinned Supabase CLI and Docker
+        run: |
+          set -euo pipefail
+          test "$(npx --yes supabase@2.115.0 --version)" = "2.115.0"
+          docker version >/dev/null
+          gpg --version >/dev/null
+
+      - name: Create Supabase-compatible logical dumps
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p backup/plain
+
+          npx --yes supabase@2.115.0 db dump --db-url "${SUPABASE_DB_URL}" -f backup/plain/roles.sql --role-only
+          npx --yes supabase@2.115.0 db dump --db-url "${SUPABASE_DB_URL}" -f backup/plain/schema.sql
+          npx --yes supabase@2.115.0 db dump --db-url "${SUPABASE_DB_URL}" -f backup/plain/data.sql --use-copy --data-only -x "storage.buckets_vectors" -x "storage.vector_indexes"
+          npx --yes supabase@2.115.0 db dump --db-url "${SUPABASE_DB_URL}" -f backup/plain/history_schema.sql --schema supabase_migrations
+          npx --yes supabase@2.115.0 db dump --db-url "${SUPABASE_DB_URL}" -f backup/plain/history_data.sql --use-copy --data-only --schema supabase_migrations
+
+          for file in roles.sql schema.sql data.sql history_schema.sql history_data.sql; do
+            test -s "backup/plain/${file}"
+          done
+
+          printf '{"created_at":"%s","supabase_cli":"2.115.0","database":"PostgreSQL 17","repository":"%s","commit":"%s","files":["roles.sql","schema.sql","data.sql","history_schema.sql","history_data.sql"]}\n' \
+            "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            "${GITHUB_REPOSITORY}" \
+            "${GITHUB_SHA}" > backup/plain/metadata.json
+
+      - name: Encrypt backup bundle and remove plaintext
+        env:
+          BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          umask 077
+          tar -C backup/plain -czf backup/vencivo-backup.tar.gz .
+
+          printf '%s\n' "${BACKUP_ENCRYPTION_PASSPHRASE}" | \
+            gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+              --symmetric --cipher-algo AES256 \
+              --output backup/vencivo-backup.tar.gz.gpg \
+              backup/vencivo-backup.tar.gz
+
+          test -s backup/vencivo-backup.tar.gz.gpg
+          sha256sum backup/vencivo-backup.tar.gz.gpg > backup/vencivo-backup.tar.gz.gpg.sha256
+          cp backup/plain/metadata.json backup/metadata.json
+
+          rm -rf backup/plain backup/vencivo-backup.tar.gz
+          test ! -e backup/plain
+          test ! -e backup/vencivo-backup.tar.gz
+
+      - name: Upload encrypted backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vencivo-supabase-db-${{ github.run_id }}
+          path: |
+            backup/vencivo-backup.tar.gz.gpg
+            backup/vencivo-backup.tar.gz.gpg.sha256
+            backup/metadata.json
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Ensure plaintext is absent
+        if: always()
+        run: |
+          set -euo pipefail
+          rm -rf backup/plain backup/vencivo-backup.tar.gz
+          test ! -e backup/plain
+          test ! -e backup/vencivo-backup.tar.gz
