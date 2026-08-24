@@ -1,0 +1,43 @@
+name: VENCIVO Regression Tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  node-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Prepare local main ref for legacy regression tests
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          if ! git show-ref --verify --quiet refs/heads/main; then
+            git branch main origin/main
+          fi
+
+      - name: Syntax-check serverless JavaScript
+        run: |
+          set -euo pipefail
+          find api -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+
+      - name: Run regression suite
+        run: node --test tests/*.test.js
