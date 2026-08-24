@@ -1,11 +1,9 @@
 name: Supabase DB Backup
 
-# Backup logico diario do PostgreSQL. Esta rotina fica inativa enquanto a PR
-# estiver em draft e so deve ser integrada depois que os secrets forem criados
-# e um restore real em ambiente separado for planejado.
+# BOOTSTRAP MANUAL. Enquanto não houver um primeiro backup real + restore
+# validado, este workflow NÃO possui schedule. Depois do gate de recuperação,
+# uma segunda PR poderá habilitar o cron diário para RPO de até 24h.
 on:
-  schedule:
-    - cron: "15 4 * * *"
   workflow_dispatch:
 
 permissions:
