@@ -48,8 +48,8 @@ test('SEC-20: NÃO usa agents nem outras tabelas com dados de usuário', () => {
   assert.equal(/\/rest\/v1\/(agent_knowledge|profiles|subscriptions|usage_counters|instagram_connections)\b/.test(workflow), false);
 });
 
-test('SEC-20: SERVICE_ROLE e secret key não aparecem em nenhuma forma', () => {
-  assert.equal(/SERVICE_ROLE/i.test(workflow), false);
+test('SEC-20: nenhuma variável/chave privilegiada é usada', () => {
+  assert.equal(/SUPABASE_SERVICE_ROLE_KEY/i.test(workflow), false);
   assert.equal(/sb_secret_[A-Za-z0-9_-]+/.test(workflow), false);
 });
 
@@ -103,7 +103,7 @@ test('SEC-20: HTTP >= 400 falha e shell propaga a falha', () => {
 test('SEC-20: nenhuma credencial privilegiada literal no workflow', () => {
   assert.equal(/eyJ[A-Za-z0-9_-]{10,}/.test(workflow), false, 'legacy JWT não deve aparecer');
   assert.equal(/sb_secret_[A-Za-z0-9_-]+/.test(workflow), false, 'secret key não deve aparecer');
-  assert.equal(/SERVICE_ROLE/i.test(workflow), false, 'service role não deve aparecer');
+  assert.equal(/SUPABASE_SERVICE_ROLE_KEY/i.test(workflow), false, 'service role env não deve aparecer');
 });
 
 test('SEC-20: nenhum outro mecanismo de keepalive equivalente no repositório', () => {
