@@ -1,35 +1,58 @@
-# OPS-02 — Backup diário criptografado do banco Supabase
+# OPS-02 — Backup criptografado do banco Supabase
 
-Status: **PREPARADO, NÃO ATIVADO**.
+Status: **BOOTSTRAP MANUAL PREPARADO — AINDA SEM BACKUP REAL**.
 
-Este documento descreve a segunda versão do desenho de backup do PostgreSQL do VENCIVO. O workflow só deve entrar em produção depois que os dois GitHub Secrets necessários existirem e um primeiro backup/restore for validado.
+Este documento descreve a segunda versão do desenho de backup do PostgreSQL do VENCIVO. A implementação foi dividida em duas etapas para evitar ativar um cron antes de provar que o backup realmente pode ser restaurado.
 
-## 1. Por que a versão anterior foi substituída
+## 1. Estratégia em duas etapas
+
+### Etapa A — bootstrap manual
+
+O workflow entra na `main` apenas com `workflow_dispatch`, sem `schedule`.
+
+Depois que os dois GitHub Secrets forem configurados, executamos uma vez manualmente, validamos o artifact criptografado e fazemos um restore em ambiente separado.
+
+### Etapa B — automação diária
+
+Somente depois do restore real aprovado será aberta uma segunda mudança adicionando:
+
+```yaml
+schedule:
+  - cron: "15 4 * * *"
+```
+
+Essa agenda diária atende ao RPO inicial de até 24 horas.
+
+## 2. Por que a versão anterior foi substituída
 
 A primeira proposta usava `pg_dump` bruto instalado no runner e criptografia `openssl enc -aes-256-cbc`.
 
-A revisão encontrou três problemas:
+A revisão encontrou quatro problemas:
 
 1. o banco de produção está em PostgreSQL **17.6** e o cliente padrão do runner pode não acompanhar a versão do servidor;
-2. o próprio Supabase recomenda `supabase db dump`, porque aplica filtros específicos e evita incluir internals que geram erros de permissão no restore;
-3. a agenda de 2x/semana não atendia ao RPO inicial de até 24 horas.
+2. o Supabase recomenda `supabase db dump`, que aplica filtros específicos e evita incluir internals/reserved roles que podem gerar erros no restore;
+3. a agenda de 2x/semana não atendia ao RPO inicial de até 24 horas;
+4. um workflow novo não deve ser agendado antes de existir na branch padrão e ter passado por um primeiro teste manual com credenciais reais.
 
-A v2 usa a Supabase CLI fixada em `2.115.0`, backup diário e GPG/AES-256.
+A v2 usa Supabase CLI fixada em `2.115.0`, GPG/AES-256 e ativação em duas etapas.
 
-## 2. Workflow
+## 3. Workflow de bootstrap
 
 Arquivo:
 
 `.github/workflows/supabase-db-backup.yml`
 
-Agenda preparada:
+No bootstrap:
 
-- todos os dias às 04:15 UTC;
-- também pode ser disparado manualmente por `workflow_dispatch`.
+- somente execução manual via `workflow_dispatch`;
+- nenhuma execução automática;
+- permissões `contents: read`;
+- concurrency impede duas cópias simultâneas;
+- timeout total de 30 minutos.
 
-Enquanto a PR estiver em draft, nada é executado em produção.
+Isso permite versionar e revisar o mecanismo sem criar execuções agendadas quebradas enquanto os Secrets ainda não existem.
 
-## 3. Secrets obrigatórios
+## 4. Secrets obrigatórios
 
 Nunca registrar os valores em documentação, issue, commit ou chat.
 
@@ -43,7 +66,7 @@ Requisitos:
 
 - tratar como segredo;
 - deve apontar para `uxmlmyhiagjefuufanyg`;
-- não reutilizar a URL em frontend;
+- não reutilizar no frontend;
 - atualizar o secret se a senha do banco for rotacionada.
 
 ### `BACKUP_ENCRYPTION_PASSPHRASE`
@@ -55,10 +78,10 @@ Requisitos:
 - pelo menos 32 caracteres;
 - idealmente aleatória e longa;
 - não reutilizar senha pessoal;
-- guardar cópia em gerenciador de senhas fora do GitHub;
+- guardar uma cópia em gerenciador de senhas seguro fora do GitHub;
 - perder essa passphrase significa perder a capacidade de descriptografar os backups.
 
-## 4. Conteúdo do backup
+## 5. Conteúdo do backup
 
 O workflow gera, via `supabase db dump`:
 
@@ -69,11 +92,11 @@ O workflow gera, via `supabase db dump`:
 - `history_data.sql` — histórico de migrations;
 - `metadata.json` — data, versão da CLI e commit de origem.
 
-O dump de dados exclui `storage.buckets_vectors` e `storage.vector_indexes`, conforme orientação atual da documentação de backup/restore do Supabase.
+O dump de dados exclui `storage.buckets_vectors` e `storage.vector_indexes`, conforme orientação atual de backup/restore do Supabase.
 
-A CLI é fixada em **2.115.0** para que o comportamento do backup não mude silenciosamente entre execuções.
+A CLI é fixada em **2.115.0** para o comportamento não mudar silenciosamente entre execuções.
 
-## 5. Criptografia
+## 6. Criptografia
 
 Os arquivos são empacotados e criptografados com GPG simétrico:
 
@@ -90,19 +113,19 @@ Artifact final:
 
 Nenhum SQL em claro deve fazer parte do artifact.
 
-## 6. Retenção
+## 7. Retenção e segundo destino
 
 A primeira camada usa GitHub Actions Artifact com retenção de **30 dias**.
 
-Isso é uma camada temporária e útil, mas **não é o destino off-site final**, porque código e artifact continuam no ecossistema GitHub.
+Isso é temporário: código e artifact continuam no ecossistema GitHub.
 
 Destino off-site inicial já reservado:
 
 - pasta privada `VENCIVO - Backups` no Google Drive do proprietário.
 
-A automação GitHub → Drive não será criada antes de validarmos manualmente um backup real e seu restore.
+A automação GitHub → Drive só será considerada depois do primeiro backup e restore validados. Até lá, não adicionaremos credenciais extras do Google ao CI.
 
-## 7. Descriptografia
+## 8. Descriptografia
 
 Somente em máquina/ambiente confiável:
 
@@ -121,7 +144,7 @@ Antes da descriptografia:
 sha256sum -c vencivo-backup.tar.gz.gpg.sha256
 ```
 
-## 8. Restore planejado
+## 9. Restore planejado
 
 O restore deve ser feito **somente em ambiente separado**, nunca diretamente sobre produção durante o teste.
 
@@ -138,9 +161,9 @@ psql \
   --dbname "$NEW_DB_URL"
 ```
 
-Depois, preservar/validar o histórico de migrations usando `history_schema.sql` e `history_data.sql` conforme a orientação de restore do Supabase.
+Depois, preservar/validar o histórico de migrations usando `history_schema.sql` e `history_data.sql`.
 
-## 9. O que validar no restore
+## 10. O que validar no restore
 
 - tabelas públicas presentes;
 - `auth.users` preservado conforme o dump produzido pela CLI;
@@ -154,23 +177,40 @@ Depois, preservar/validar o histórico de migrations usando `history_schema.sql`
 - migration history disponível;
 - nenhuma credencial antiga reaproveitada indevidamente.
 
-## 10. Storage
+## 11. Storage
 
 Este workflow protege o PostgreSQL, **não os bytes dos objetos do Supabase Storage**.
 
-No checkpoint de 24/08/2026, o bucket privado `vencivo-knowledge` tinha 0 objetos/0 bytes. Storage continua sendo um gate separado e deve ser reavaliado sempre que surgirem arquivos persistentes.
+No checkpoint de 24/08/2026, o bucket privado `vencivo-knowledge` tinha 0 objetos/0 bytes. Storage continua sendo gate separado e deve ser reavaliado quando surgirem objetos persistentes.
 
-## 11. Gate antes do merge
+## 12. Gate de ativação
 
-Não integrar a rotina agendada enquanto não houver:
+### Para integrar o bootstrap manual
 
-1. `SUPABASE_DB_URL` configurado como GitHub Secret;
-2. `BACKUP_ENCRYPTION_PASSPHRASE` configurado como GitHub Secret e guardado fora do GitHub;
-3. revisão final do workflow;
-4. primeiro run manual verde;
-5. artifact contendo apenas conteúdo criptografado;
-6. restore real em ambiente separado planejado/executado.
+Pode ser integrado sem os Secrets porque não existe cron e nenhuma execução é automática.
 
-## 12. Regra de continuidade
+### Para executar o primeiro backup
+
+Obrigatório:
+
+1. criar `SUPABASE_DB_URL` como GitHub Secret;
+2. criar `BACKUP_ENCRYPTION_PASSPHRASE` como GitHub Secret e guardar cópia fora do GitHub;
+3. disparar o workflow manualmente;
+4. confirmar run verde e artifact presente;
+5. verificar que o artifact não contém SQL em claro.
+
+### Para habilitar o cron diário
+
+Obrigatório antes:
+
+1. validar checksum;
+2. descriptografar o artifact em ambiente confiável;
+3. restaurar em ambiente separado;
+4. confirmar Auth, schema, RLS, funções, dados e migration history;
+5. registrar o resultado do restore.
+
+Somente então habilitar o `schedule` diário.
+
+## 13. Regra de continuidade
 
 **Gerar artifact não prova recuperação. OPS-02 só será considerado concluído após um restore real bem-sucedido.**
