@@ -1,24 +1,36 @@
 name: Supabase Keepalive
 
+# Evita a pausa por inatividade do projeto Supabase Free (uxmlmyhiagjefuufanyg)
+# com 1 SELECT minimo, 2x por semana. Roda fora do Vercel de proposito — nao
+# consome Serverless Function nem Vercel Cron. Nao faz checkout.
+#
+# A publishable key moderna do Supabase e deliberadamente publica e de baixo
+# privilegio; a seguranca dos dados continua sendo imposta pelas policies RLS.
+# Nunca substituir esta chave por service_role/secret key neste workflow.
 on:
   schedule:
     - cron: "0 9 * * 1,4"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+env:
+  SUPABASE_URL: https://uxmlmyhiagjefuufanyg.supabase.co
+  SUPABASE_PUBLISHABLE_KEY: sb_publishable_wAajSubj-zZE7kFh7EAxog_2FxCrs6Z
+
 jobs:
   keepalive:
     runs-on: ubuntu-latest
+    timeout-minutes: 2
 
     steps:
-      - name: Ping Supabase REST API
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - name: Ping Supabase REST API (plan_catalog, publishable key, somente leitura)
         run: |
           set -euo pipefail
 
           curl --fail-with-body --silent --show-error \
-            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
-            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
-            "${SUPABASE_URL}/rest/v1/agents?select=id&limit=1" \
+            --connect-timeout 5 --max-time 10 \
+            -H "apikey: ${SUPABASE_PUBLISHABLE_KEY}" \
+            "${SUPABASE_URL}/rest/v1/plan_catalog?select=code&active=eq.true&limit=1" \
             -o /dev/null
