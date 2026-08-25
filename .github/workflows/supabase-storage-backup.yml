@@ -1,0 +1,58 @@
+name: Supabase Storage Backup
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vencivo-supabase-storage-backup
+  cancel-in-progress: false
+
+jobs:
+  backup-storage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+      STORAGE_BUCKET: vencivo-knowledge
+      STORAGE_BACKUP_DIR: storage-backup/plain
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_URL" || { echo 'SUPABASE_URL is missing.'; exit 1; }
+          test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo 'SUPABASE_SERVICE_ROLE_KEY is missing.'; exit 1; }
+          test ${#BACKUP_PASSPHRASE} -ge 32 || { echo 'BACKUP_ENCRYPTION_PASSPHRASE must be at least 32 characters.'; exit 1; }
+
+      - name: Export private Storage bucket
+        run: node scripts/backup-supabase-storage.mjs
+
+      - name: Build encrypted bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -C storage-backup/plain -czf storage-backup/vencivo-storage.tar.gz .
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --symmetric --cipher-algo AES256 --output storage-backup/vencivo-storage.tar.gz.gpg storage-backup/vencivo-storage.tar.gz
+          sha256sum storage-backup/vencivo-storage.tar.gz.gpg > storage-backup/vencivo-storage.tar.gz.gpg.sha256
+          cp storage-backup/plain/manifest.json storage-backup/manifest.json
+          rm -rf storage-backup/plain storage-backup/vencivo-storage.tar.gz
+          test ! -e storage-backup/vencivo-storage.tar.gz
+
+      - name: Upload encrypted artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vencivo-supabase-storage-${{ github.run_id }}
+          path: |
+            storage-backup/vencivo-storage.tar.gz.gpg
+            storage-backup/vencivo-storage.tar.gz.gpg.sha256
+            storage-backup/manifest.json
+          if-no-files-found: error
+          retention-days: 30
