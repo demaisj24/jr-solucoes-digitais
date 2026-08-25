@@ -1,0 +1,108 @@
+name: Supabase Restore Drill
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup_run_id:
+        description: 'Successful Supabase DB Backup workflow run ID'
+        required: true
+        type: string
+      confirmation:
+        description: 'Type RESTORE-TEST-ONLY'
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  restore-drill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PROD_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      RESTORE_DB_URL: ${{ secrets.SUPABASE_RESTORE_DB_URL }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+    steps:
+      - name: Validate safety gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ inputs.confirmation }}" = "RESTORE-TEST-ONLY" || { echo 'Confirmation phrase rejected.'; exit 1; }
+          test -n "$PROD_DB_URL" || { echo 'SUPABASE_DB_URL is missing.'; exit 1; }
+          test -n "$RESTORE_DB_URL" || { echo 'SUPABASE_RESTORE_DB_URL is missing.'; exit 1; }
+          test -n "$BACKUP_PASSPHRASE" || { echo 'BACKUP_ENCRYPTION_PASSPHRASE is missing.'; exit 1; }
+          test "$PROD_DB_URL" != "$RESTORE_DB_URL" || { echo 'Refusing restore: target equals production.'; exit 1; }
+          case "$RESTORE_DB_URL" in postgresql://*|postgres://*) ;; *) echo 'Restore target is not a PostgreSQL URI.'; exit 1;; esac
+
+      - name: Download encrypted backup artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vencivo-supabase-db-backup
+          path: restore-artifact
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.backup_run_id }}
+
+      - name: Verify artifact and decrypt
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd restore-artifact
+          test -f vencivo-backup.tar.gz.gpg
+          test -f vencivo-backup.tar.gz.gpg.sha256
+          sha256sum -c vencivo-backup.tar.gz.gpg.sha256
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --decrypt --output vencivo-backup.tar.gz vencivo-backup.tar.gz.gpg
+          mkdir extracted
+          tar -xzf vencivo-backup.tar.gz -C extracted
+          find extracted -maxdepth 2 -type f -print
+
+      - name: Install PostgreSQL 17 client
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo install -d /usr/share/postgresql-common/pgdg
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg] https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo $VERSION_CODENAME)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client-17
+          psql --version
+
+      - name: Prove restore target is not production
+        shell: bash
+        run: |
+          set -euo pipefail
+          prod_id=$(psql "$PROD_DB_URL" -Atqc "select current_database() || ':' || inet_server_addr()::text || ':' || inet_server_port()::text")
+          restore_id=$(psql "$RESTORE_DB_URL" -Atqc "select current_database() || ':' || inet_server_addr()::text || ':' || inet_server_port()::text")
+          test -n "$prod_id" && test -n "$restore_id"
+          test "$prod_id" != "$restore_id" || { echo 'Refusing restore: production and restore resolve to same database endpoint.'; exit 1; }
+          echo 'Production/restore endpoint separation verified.'
+
+      - name: Restore schema and data into isolated target
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd restore-artifact/extracted
+          schema=$(find . -type f -name '*schema*.sql' | head -n1)
+          data=$(find . -type f -name '*data*.sql' | head -n1)
+          test -n "$schema" || { echo 'Schema dump not found.'; exit 1; }
+          test -n "$data" || { echo 'Data dump not found.'; exit 1; }
+          psql "$RESTORE_DB_URL" -v ON_ERROR_STOP=1 -f "$schema"
+          psql "$RESTORE_DB_URL" -v ON_ERROR_STOP=1 -f "$data"
+
+      - name: Validate restored database
+        shell: bash
+        run: |
+          set -euo pipefail
+          tables=$(psql "$RESTORE_DB_URL" -Atqc "select count(*) from pg_tables where schemaname='public'")
+          test "${tables:-0}" -gt 0 || { echo 'No public tables restored.'; exit 1; }
+          echo "Public tables restored: $tables"
+          psql "$RESTORE_DB_URL" -Atqc "select schemaname || '.' || tablename from pg_tables where schemaname='public' order by tablename" > restored-tables.txt
+          test -s restored-tables.txt
+
+      - name: Remove decrypted material
+        if: always()
+        shell: bash
+        run: |
+          rm -rf restore-artifact/extracted restore-artifact/vencivo-backup.tar.gz restored-tables.txt
