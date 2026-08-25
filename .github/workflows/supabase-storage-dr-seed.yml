@@ -1,0 +1,53 @@
+name: Supabase Storage DR Seed
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type SEED-STORAGE-DR-TEST'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      STORAGE_BUCKET: vencivo-knowledge
+      SENTINEL_PATH: __dr_test__/vencivo-storage-restore-sentinel.txt
+    steps:
+      - name: Validate safety gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ inputs.confirmation }}" = "SEED-STORAGE-DR-TEST" || { echo 'Confirmation phrase rejected.'; exit 1; }
+          test -n "$SUPABASE_URL" && test -n "$SUPABASE_SERVICE_ROLE_KEY"
+
+      - name: Upload harmless DR sentinel to production Storage
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'VENCIVO STORAGE DR SENTINEL v1\n' > sentinel.txt
+          curl --fail-with-body --silent --show-error \
+            -X POST \
+            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H 'Content-Type: text/plain' \
+            -H 'x-upsert: true' \
+            --data-binary @sentinel.txt \
+            "${SUPABASE_URL}/storage/v1/object/${STORAGE_BUCKET}/${SENTINEL_PATH}" >/dev/null
+
+      - name: Verify sentinel is readable only through authenticated API
+        shell: bash
+        run: |
+          set -euo pipefail
+          body=$(curl --fail-with-body --silent --show-error \
+            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            "${SUPABASE_URL}/storage/v1/object/authenticated/${STORAGE_BUCKET}/${SENTINEL_PATH}")
+          test "$body" = 'VENCIVO STORAGE DR SENTINEL v1'
