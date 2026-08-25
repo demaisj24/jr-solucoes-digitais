@@ -1,39 +1,53 @@
 # VENCIVO — CURRENT TASK
 
 ## TASK
-`INST-04` — Fundação do webhook Instagram
+`DR-02` — Supabase Storage + reconstrução Gemini File Search
 
 ## Objetivo
-Preparar o recebimento seguro de eventos do Instagram para que, posteriormente, o VENCIVO processe Direct e comentários e entregue os eventos ao agente especialista.
+Fechar o restante do disaster recovery do VENCIVO depois da validação real do backup/restore PostgreSQL.
 
-## Contexto
-- AI-01 está funcional.
-- AI-02 foi implementado e validado no preview pelo dono do produto.
-- Instagram é o canal prioritário.
-- WhatsApp está fora do MVP atual.
-- A fundação OAuth está na branch `feat/instagram-foundation` e PR #13.
+## Estado confirmado antes de iniciar
 
-## Não fazer nesta tarefa
-- não alterar `main`;
-- não fazer merge;
-- não enviar mensagens reais para clientes;
-- não implementar OAuth novamente;
-- não alterar File Search/Gemini;
-- não alterar checkout;
-- não implementar WhatsApp;
-- não criar processamento definitivo de mensagens/comentários se o contrato de webhook ainda não estiver validado;
-- não executar SQL de produção;
-- não expor secrets.
+- OPS-02 do banco está concluído.
+- Backup real criptografado foi validado.
+- Restore real passou no ambiente isolado `Vencivo-Restore-Test`.
+- Workflow run de restore aprovado: `32797657905`.
+- Restore validou 11 tabelas públicas.
+- Backup diário está habilitado via PR #41.
+- Cron atual do backup DB: `17 6 * * *`.
+- RPO operacional alvo do banco: até 24h.
+- AI-02 foi reconstruído e integrado via PR #35.
+
+## Escopo desta tarefa
+
+1. Auditar buckets/objetos reais do Supabase Storage.
+2. Identificar quais arquivos são fonte canônica e quais são derivados/recriáveis.
+3. Definir backup, retenção e recuperação do Storage com menor privilégio.
+4. Testar recuperação em ambiente separado antes de marcar como concluído.
+5. Auditar a relação entre documentos do Storage/SQL e stores do Gemini File Search.
+6. Definir procedimento determinístico para reconstruir File Search após perda do store externo.
+7. Atualizar o manual operacional e a continuidade.
+
+## Não fazer
+
+- não restaurar nada sobre produção;
+- não apagar objetos de produção;
+- não versionar chaves, senhas, connection strings ou passphrases;
+- não considerar Gemini File Search como backup primário de documentos;
+- não habilitar automação destrutiva sem teste isolado;
+- não refazer OPS-02, salvo se uma regressão real for encontrada.
 
 ## Critérios de aceite
-1. Endpoint de webhook possui verificação GET compatível com o fluxo Meta escolhido.
-2. POST rejeita assinatura inválida.
-3. POST aceita somente eventos Instagram esperados.
-4. O processamento é preparado para idempotência sem duplicar eventos.
-5. O endpoint não chama Gemini nem responde ao cliente nesta tarefa.
-6. O payload bruto não é gravado contendo tokens/secrets.
-7. Testes unitários cobrem assinatura válida, inválida e verificação GET.
-8. PR Draft com diff pequeno e relatório.
 
-## Próximo passo depois do aceite
-`INST-05` — persistência/idempotência e resolução `instagram_user_id -> agent_id`.
+1. Inventário de Storage conhecido.
+2. Estratégia de backup/retenção documentada e implementada quando necessária.
+3. Restore/reconstrução do Storage testado quando houver objetos reais relevantes.
+4. Fonte canônica de documentos definida.
+5. Procedimento de reconstrução do Gemini File Search documentado e verificável.
+6. Nenhum secret ou conteúdo sensível exposto no Git.
+7. CI/regressão continua verde.
+8. `VENCIVO-CONTINUITY.md` atualizado ao final.
+
+## Próximo passo após DR-02
+
+Revisão final de infraestrutura/LGPD/segurança e depois validações E2E de billing, IA e Instagram antes do lançamento.
