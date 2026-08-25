@@ -52,7 +52,9 @@ jobs:
           cd restore-artifact
           test -f vencivo-backup.tar.gz.gpg
           test -f vencivo-backup.tar.gz.gpg.sha256
-          sha256sum -c vencivo-backup.tar.gz.gpg.sha256
+          expected_sha=$(awk 'NR==1 {print $1}' vencivo-backup.tar.gz.gpg.sha256)
+          actual_sha=$(sha256sum vencivo-backup.tar.gz.gpg | awk '{print $1}')
+          test -n "$expected_sha" && test "$expected_sha" = "$actual_sha" || { echo 'Encrypted backup checksum mismatch.'; exit 1; }
           printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --decrypt --output vencivo-backup.tar.gz vencivo-backup.tar.gz.gpg
           mkdir extracted
           tar -xzf vencivo-backup.tar.gz -C extracted
