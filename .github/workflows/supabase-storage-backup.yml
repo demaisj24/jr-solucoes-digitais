@@ -1,0 +1,73 @@
+name: Supabase Storage Backup
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vencivo-supabase-storage-backup
+  cancel-in-progress: false
+
+jobs:
+  backup-storage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+      STORAGE_BUCKET: vencivo-knowledge
+      STORAGE_BACKUP_DIR: storage-backup/plain
+    steps:
+      - name: Checkout
+        # actions/checkout v4.2.2, pinned to immutable commit.
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Validate secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_URL" || { echo 'SUPABASE_URL is missing.'; exit 1; }
+          test -n "$SUPABASE_SERVICE_ROLE_KEY" || { echo 'SUPABASE_SERVICE_ROLE_KEY is missing.'; exit 1; }
+          test ${#BACKUP_PASSPHRASE} -ge 32 || { echo 'BACKUP_ENCRYPTION_PASSPHRASE must be at least 32 characters.'; exit 1; }
+          gpg --version >/dev/null
+
+      - name: Export private Storage bucket
+        run: node scripts/backup-supabase-storage.mjs
+
+      - name: Build encrypted bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          tar -C storage-backup/plain -czf storage-backup/vencivo-storage.tar.gz .
+          printf '%s\n' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --symmetric --cipher-algo AES256 --output storage-backup/vencivo-storage.tar.gz.gpg storage-backup/vencivo-storage.tar.gz
+          test -s storage-backup/vencivo-storage.tar.gz.gpg
+          sha256sum storage-backup/vencivo-storage.tar.gz.gpg > storage-backup/vencivo-storage.tar.gz.gpg.sha256
+          printf '{"created_at":"%s","bucket":"%s","encrypted":true,"repository":"%s","commit":"%s"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$STORAGE_BUCKET" "$GITHUB_REPOSITORY" "$GITHUB_SHA" > storage-backup/metadata.json
+          rm -rf storage-backup/plain storage-backup/vencivo-storage.tar.gz
+          test ! -e storage-backup/plain
+          test ! -e storage-backup/vencivo-storage.tar.gz
+
+      - name: Upload encrypted artifact
+        # actions/upload-artifact v7.0.1, pinned to immutable commit.
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: vencivo-supabase-storage-${{ github.run_id }}
+          path: |
+            storage-backup/vencivo-storage.tar.gz.gpg
+            storage-backup/vencivo-storage.tar.gz.gpg.sha256
+            storage-backup/metadata.json
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Ensure plaintext is absent
+        if: always()
+        shell: bash
+        run: |
+          rm -rf storage-backup/plain storage-backup/vencivo-storage.tar.gz
+          test ! -e storage-backup/plain
+          test ! -e storage-backup/vencivo-storage.tar.gz
