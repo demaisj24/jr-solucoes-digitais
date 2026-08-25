@@ -30,9 +30,20 @@ test('DR-02 Storage: bundle é AES256 e plaintext é removido antes do artifact'
   assert.ok(remove >= 0 && upload > remove);
 });
 
-test('DR-02 Storage: artifact contém criptografado, checksum e manifesto, com retenção 30 dias', () => {
+test('DR-02 Storage: manifesto com nomes/caminhos fica somente dentro do bundle criptografado', () => {
+  assert.match(script, /manifest\.json/);
+  assert.equal(/storage-backup\/manifest\.json/.test(workflow), false);
+  assert.match(workflow, /storage-backup\/metadata\.json/);
+});
+
+test('DR-02 Storage: artifact contém somente criptografado, checksum e metadata não sensível', () => {
   assert.match(workflow, /vencivo-storage\.tar\.gz\.gpg/);
   assert.match(workflow, /vencivo-storage\.tar\.gz\.gpg\.sha256/);
-  assert.match(workflow, /storage-backup\/manifest\.json/);
   assert.match(workflow, /retention-days:\s*30/);
+  assert.match(workflow, /compression-level:\s*0/);
+});
+
+test('DR-02 Storage: GitHub Actions críticas estão pinadas por SHA', () => {
+  assert.match(workflow, /actions\/checkout@[0-9a-f]{40}/);
+  assert.match(workflow, /actions\/upload-artifact@[0-9a-f]{40}/);
 });
