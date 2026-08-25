@@ -1,10 +1,11 @@
 name: Supabase DB Backup
 
-# BOOTSTRAP MANUAL. Enquanto não houver um primeiro backup real + restore
-# validado, este workflow NÃO possui schedule. Depois do gate de recuperação,
-# uma segunda PR poderá habilitar o cron diário para RPO de até 24h.
+# Gate de recuperação validado em restore drill real. Backup diário habilitado
+# para RPO de até 24h, mantendo disparo manual para testes e contingência.
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * *'
 
 permissions:
   contents: read
