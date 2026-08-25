@@ -77,11 +77,32 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          prod_id=$(psql "$PROD_DB_URL" -Atqc "select current_database() || ':' || inet_server_addr()::text || ':' || inet_server_port()::text")
-          restore_id=$(psql "$RESTORE_DB_URL" -Atqc "select current_database() || ':' || inet_server_addr()::text || ':' || inet_server_port()::text")
-          test -n "$prod_id" && test -n "$restore_id"
-          test "$prod_id" != "$restore_id" || { echo 'Refusing restore: production and restore resolve to same database endpoint.'; exit 1; }
-          echo 'Production/restore endpoint separation verified.'
+
+          project_ref() {
+            local url="$1" authority user host
+            authority="${url#*://}"
+            user="${authority%%:*}"
+            host="${authority##*@}"
+            host="${host%%[:/]*}"
+
+            if [[ "$host" =~ ^db\.([a-z0-9]+)\.supabase\.co$ ]]; then
+              printf '%s' "${BASH_REMATCH[1]}"
+              return
+            fi
+            if [[ "$user" =~ ^postgres\.([a-z0-9]+)$ ]]; then
+              printf '%s' "${BASH_REMATCH[1]}"
+              return
+            fi
+            return 1
+          }
+
+          prod_ref=$(project_ref "$PROD_DB_URL") || { echo 'Could not identify production Supabase project ref.'; exit 1; }
+          restore_ref=$(project_ref "$RESTORE_DB_URL") || { echo 'Could not identify restore Supabase project ref.'; exit 1; }
+          test -n "$prod_ref" && test -n "$restore_ref"
+          test "$prod_ref" != "$restore_ref" || { echo 'Refusing restore: production and restore project refs are identical.'; exit 1; }
+
+          psql "$RESTORE_DB_URL" -v ON_ERROR_STOP=1 -Atqc "select 1" | grep -qx '1'
+          echo 'Production/restore project separation verified; restore target is reachable.'
 
       - name: Restore schema and data into isolated target
         shell: bash
