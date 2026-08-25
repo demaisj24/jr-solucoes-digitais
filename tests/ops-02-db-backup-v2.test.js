@@ -5,10 +5,10 @@ import { readFileSync } from 'node:fs';
 const workflow = readFileSync(new URL('../.github/workflows/supabase-db-backup.yml', import.meta.url), 'utf8');
 const uploadMarker='uses: actions/upload-artifact@';
 
-test('OPS-02 v2: bootstrap é manual-only até o primeiro restore real', () => {
+test('OPS-02 v2: após restore real validado, mantém manual e agenda backup diário', () => {
   assert.match(workflow, /workflow_dispatch:/);
-  assert.equal(/\bschedule\s*:/.test(workflow), false);
-  assert.equal(/\bcron\s*:/.test(workflow), false);
+  assert.match(workflow, /\bschedule\s*:/);
+  assert.match(workflow, /cron:\s*['"]17 6 \* \* \*['"]/);
 });
 
 test('OPS-02 v2: usa Supabase CLI fixada em 2.115.0, nunca latest', () => {
