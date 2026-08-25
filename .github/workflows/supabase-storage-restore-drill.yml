@@ -1,0 +1,114 @@
+name: Supabase Storage Restore Drill
+
+on:
+  workflow_dispatch:
+    inputs:
+      backup_run_id:
+        description: 'Successful Supabase Storage Backup run ID containing the DR sentinel'
+        required: true
+        type: string
+      confirmation:
+        description: 'Type RESTORE-STORAGE-TEST-ONLY'
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  restore-storage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PROD_URL: ${{ secrets.SUPABASE_URL }}
+      PROD_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      RESTORE_URL: ${{ secrets.SUPABASE_RESTORE_URL }}
+      RESTORE_KEY: ${{ secrets.SUPABASE_RESTORE_SERVICE_ROLE_KEY }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+      STORAGE_BUCKET: vencivo-knowledge
+      SENTINEL_PATH: __dr_test__/vencivo-storage-restore-sentinel.txt
+    steps:
+      - name: Validate safety gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ inputs.confirmation }}" = "RESTORE-STORAGE-TEST-ONLY" || { echo 'Confirmation phrase rejected.'; exit 1; }
+          test -n "$PROD_URL" && test -n "$PROD_KEY" && test -n "$RESTORE_URL" && test -n "$RESTORE_KEY" && test -n "$BACKUP_PASSPHRASE"
+          test "$PROD_URL" != "$RESTORE_URL" || { echo 'Refusing restore: target equals production.'; exit 1; }
+          prod_ref=$(printf '%s' "$PROD_URL" | sed -E 's#https://([a-z0-9]+)\.supabase\.co.*#\1#')
+          restore_ref=$(printf '%s' "$RESTORE_URL" | sed -E 's#https://([a-z0-9]+)\.supabase\.co.*#\1#')
+          test -n "$prod_ref" && test -n "$restore_ref" && test "$prod_ref" != "$restore_ref" || { echo 'Could not prove isolated Supabase projects.'; exit 1; }
+
+      - name: Download encrypted Storage backup artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: vencivo-supabase-storage-${{ inputs.backup_run_id }}
+          path: restore-artifact
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.backup_run_id }}
+
+      - name: Verify checksum and decrypt
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd restore-artifact
+          expected=$(awk 'NR==1 {print $1}' vencivo-storage.tar.gz.gpg.sha256)
+          actual=$(sha256sum vencivo-storage.tar.gz.gpg | awk '{print $1}')
+          test -n "$expected" && test "$expected" = "$actual" || { echo 'Checksum mismatch.'; exit 1; }
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --decrypt --output vencivo-storage.tar.gz vencivo-storage.tar.gz.gpg
+          mkdir extracted
+          tar -xzf vencivo-storage.tar.gz -C extracted
+          test -s extracted/manifest.json
+          test -f "extracted/objects/${SENTINEL_PATH}" || { echo 'DR sentinel is absent from this backup; refusing to count it as restore proof.'; exit 1; }
+          grep -qx 'VENCIVO STORAGE DR SENTINEL v1' "extracted/objects/${SENTINEL_PATH}"
+
+      - name: Ensure restore bucket exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          code=$(curl --silent --show-error -o bucket.json -w '%{http_code}' \
+            -H "apikey: ${RESTORE_KEY}" -H "Authorization: Bearer ${RESTORE_KEY}" \
+            "${RESTORE_URL}/storage/v1/bucket/${STORAGE_BUCKET}")
+          if [ "$code" = '404' ]; then
+            curl --fail-with-body --silent --show-error -X POST \
+              -H "apikey: ${RESTORE_KEY}" -H "Authorization: Bearer ${RESTORE_KEY}" -H 'Content-Type: application/json' \
+              --data "{\"id\":\"${STORAGE_BUCKET}\",\"name\":\"${STORAGE_BUCKET}\",\"public\":false,\"file_size_limit\":52428800}" \
+              "${RESTORE_URL}/storage/v1/bucket" >/dev/null
+          elif [ "$code" != '200' ]; then
+            cat bucket.json >&2; exit 1
+          fi
+
+      - name: Restore sentinel into isolated project
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error -X POST \
+            -H "apikey: ${RESTORE_KEY}" -H "Authorization: Bearer ${RESTORE_KEY}" \
+            -H 'Content-Type: text/plain' -H 'x-upsert: true' \
+            --data-binary "@restore-artifact/extracted/objects/${SENTINEL_PATH}" \
+            "${RESTORE_URL}/storage/v1/object/${STORAGE_BUCKET}/${SENTINEL_PATH}" >/dev/null
+
+      - name: Validate restored bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error \
+            -H "apikey: ${RESTORE_KEY}" -H "Authorization: Bearer ${RESTORE_KEY}" \
+            "${RESTORE_URL}/storage/v1/object/authenticated/${STORAGE_BUCKET}/${SENTINEL_PATH}" > restored.txt
+          cmp "restore-artifact/extracted/objects/${SENTINEL_PATH}" restored.txt
+          echo 'Storage restore proof PASS: bytes are identical in isolated project.'
+
+      - name: Cleanup DR sentinels and plaintext
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          for pair in "$PROD_URL|$PROD_KEY" "$RESTORE_URL|$RESTORE_KEY"; do
+            url=${pair%%|*}; key=${pair#*|}
+            [ -n "$url" ] && [ -n "$key" ] && curl --silent --show-error -X DELETE \
+              -H "apikey: ${key}" -H "Authorization: Bearer ${key}" \
+              "${url}/storage/v1/object/${STORAGE_BUCKET}/${SENTINEL_PATH}" >/dev/null || true
+          done
+          rm -rf restore-artifact/extracted restore-artifact/vencivo-storage.tar.gz restored.txt sentinel.txt bucket.json
