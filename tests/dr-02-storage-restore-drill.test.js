@@ -16,6 +16,15 @@ test('DR-02 restore: alvo usa secrets separados do projeto de produção', () =>
   assert.match(restore, /test "\$PROD_URL" != "\$RESTORE_URL"/);
 });
 
+test('DR-02 restore: normaliza whitespace dos secrets e recusa formato desconhecido', () => {
+  assert.match(restore, /clean_value\(\)/);
+  assert.match(restore, /tr -d '\\r\\n'/);
+  assert.match(restore, /sb_secret_\*\)/);
+  assert.match(restore, /eyJ\*\)/);
+  assert.match(restore, /Restore key format is not recognized/);
+  assert.match(restore, /GITHUB_ENV/);
+});
+
 test('DR-02 restore: aceita sb_secret via apikey sem tentar usa-la como JWT Bearer', () => {
   assert.match(restore, /restore_headers=\(-H "apikey: \$\{RESTORE_KEY\}"\)/);
   assert.match(restore, /if \[\[ "\$RESTORE_KEY" != sb_secret_\* \]\]; then/);
@@ -28,6 +37,12 @@ test('DR-02 restore: trata bucket ausente mesmo quando Storage responde HTTP 400
   assert.match(restore, /NoSuchBucket/);
   assert.match(restore, /Bucket not found/);
   assert.match(restore, /bucket_missing=true/);
+});
+
+test('DR-02 restore: criação do bucket captura status e corpo sem expor secret', () => {
+  assert.match(restore, /bucket-create\.json/);
+  assert.match(restore, /create_code=/);
+  assert.match(restore, /Storage bucket create failed with status/);
 });
 
 test('DR-02 restore: backup sem sentinel não pode ser contado como prova', () => {
