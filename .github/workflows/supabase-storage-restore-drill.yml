@@ -29,16 +29,42 @@ jobs:
       STORAGE_BUCKET: vencivo-knowledge
       SENTINEL_PATH: __dr_test__/vencivo-storage-restore-sentinel.txt
     steps:
-      - name: Validate safety gates
+      - name: Normalize and validate safety gates
         shell: bash
         run: |
           set -euo pipefail
           test "${{ inputs.confirmation }}" = "RESTORE-STORAGE-TEST-ONLY" || { echo 'Confirmation phrase rejected.'; exit 1; }
+
+          clean_value() {
+            printf '%s' "$1" | tr -d '\r\n' | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//'
+          }
+
+          PROD_URL=$(clean_value "$PROD_URL")
+          PROD_KEY=$(clean_value "$PROD_KEY")
+          RESTORE_URL=$(clean_value "$RESTORE_URL")
+          RESTORE_KEY=$(clean_value "$RESTORE_KEY")
+          BACKUP_PASSPHRASE=$(clean_value "$BACKUP_PASSPHRASE")
+
           test -n "$PROD_URL" && test -n "$PROD_KEY" && test -n "$RESTORE_URL" && test -n "$RESTORE_KEY" && test -n "$BACKUP_PASSPHRASE"
           test "$PROD_URL" != "$RESTORE_URL" || { echo 'Refusing restore: target equals production.'; exit 1; }
+
+          case "$RESTORE_KEY" in
+            sb_secret_*) echo 'Restore key format: modern secret key.' ;;
+            eyJ*) echo 'Restore key format: legacy JWT service-role key.' ;;
+            *) echo 'Restore key format is not recognized; refusing Storage restore.'; exit 1 ;;
+          esac
+
           prod_ref=$(printf '%s' "$PROD_URL" | sed -E 's#https://([a-z0-9]+)\.supabase\.co.*#\1#')
           restore_ref=$(printf '%s' "$RESTORE_URL" | sed -E 's#https://([a-z0-9]+)\.supabase\.co.*#\1#')
           test -n "$prod_ref" && test -n "$restore_ref" && test "$prod_ref" != "$restore_ref" || { echo 'Could not prove isolated Supabase projects.'; exit 1; }
+
+          {
+            echo "PROD_URL=$PROD_URL"
+            echo "PROD_KEY=$PROD_KEY"
+            echo "RESTORE_URL=$RESTORE_URL"
+            echo "RESTORE_KEY=$RESTORE_KEY"
+            echo "BACKUP_PASSPHRASE=$BACKUP_PASSPHRASE"
+          } >> "$GITHUB_ENV"
 
       - name: Download encrypted Storage backup artifact
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -85,10 +111,15 @@ jobs:
           fi
 
           if [ "$bucket_missing" = true ]; then
-            curl --fail-with-body --silent --show-error -X POST \
+            create_code=$(curl --silent --show-error -o bucket-create.json -w '%{http_code}' -X POST \
               "${restore_headers[@]}" -H 'Content-Type: application/json' \
               --data "{\"id\":\"${STORAGE_BUCKET}\",\"name\":\"${STORAGE_BUCKET}\",\"public\":false,\"file_size_limit\":52428800}" \
-              "${RESTORE_URL}/storage/v1/bucket" >/dev/null
+              "${RESTORE_URL}/storage/v1/bucket")
+            if [ "$create_code" != '200' ]; then
+              cat bucket-create.json >&2
+              echo "Storage bucket create failed with status: ${create_code}" >&2
+              exit 1
+            fi
           elif [ "$code" != '200' ]; then
             cat bucket.json >&2
             echo "Unexpected Storage bucket lookup status: ${code}" >&2
@@ -140,4 +171,4 @@ jobs:
                 "${url}/storage/v1/object/${STORAGE_BUCKET}/${SENTINEL_PATH}" >/dev/null || true
             fi
           done
-          rm -rf restore-artifact/extracted restore-artifact/vencivo-storage.tar.gz restored.txt sentinel.txt bucket.json
+          rm -rf restore-artifact/extracted restore-artifact/vencivo-storage.tar.gz restored.txt sentinel.txt bucket.json bucket-create.json
