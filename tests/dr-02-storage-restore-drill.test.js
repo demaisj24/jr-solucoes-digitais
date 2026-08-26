@@ -16,6 +16,13 @@ test('DR-02 restore: alvo usa secrets separados do projeto de produção', () =>
   assert.match(restore, /test "\$PROD_URL" != "\$RESTORE_URL"/);
 });
 
+test('DR-02 restore: aceita sb_secret via apikey sem tentar usa-la como JWT Bearer', () => {
+  assert.match(restore, /restore_headers=\(-H "apikey: \$\{RESTORE_KEY\}"\)/);
+  assert.match(restore, /if \[\[ "\$RESTORE_KEY" != sb_secret_\* \]\]; then/);
+  assert.match(restore, /restore_headers\+=\(-H "Authorization: Bearer \$\{RESTORE_KEY\}"\)/);
+  assert.match(restore, /"\$\{restore_headers\[@\]\}"/);
+});
+
 test('DR-02 restore: backup sem sentinel não pode ser contado como prova', () => {
   assert.match(restore, /DR sentinel is absent from this backup/);
   assert.match(restore, /grep -qx 'VENCIVO STORAGE DR SENTINEL v1'/);
@@ -24,5 +31,6 @@ test('DR-02 restore: backup sem sentinel não pode ser contado como prova', () =
 test('DR-02 restore: valida bytes restaurados e limpa sentinels', () => {
   assert.match(restore, /\bcmp\b/);
   assert.match(restore, /Cleanup DR sentinels and plaintext/);
-  assert.match(restore, /method|DELETE|curl --silent/);
+  assert.match(restore, /DELETE/);
+  assert.match(restore, /if \[\[ "\$key" != sb_secret_\* \]\]; then/);
 });
