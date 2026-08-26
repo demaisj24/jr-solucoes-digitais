@@ -43,7 +43,6 @@ jobs:
           PROD_KEY=$(clean_value "$PROD_KEY")
           RESTORE_URL=$(clean_value "$RESTORE_URL")
           RESTORE_KEY=$(clean_value "$RESTORE_KEY")
-          BACKUP_PASSPHRASE=$(clean_value "$BACKUP_PASSPHRASE")
 
           test -n "$PROD_URL" && test -n "$PROD_KEY" && test -n "$RESTORE_URL" && test -n "$RESTORE_KEY" && test -n "$BACKUP_PASSPHRASE"
           test "$PROD_URL" != "$RESTORE_URL" || { echo 'Refusing restore: target equals production.'; exit 1; }
@@ -63,7 +62,6 @@ jobs:
             echo "PROD_KEY=$PROD_KEY"
             echo "RESTORE_URL=$RESTORE_URL"
             echo "RESTORE_KEY=$RESTORE_KEY"
-            echo "BACKUP_PASSPHRASE=$BACKUP_PASSPHRASE"
           } >> "$GITHUB_ENV"
 
       - name: Download encrypted Storage backup artifact
