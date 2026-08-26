@@ -68,24 +68,35 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          restore_headers=(-H "apikey: ${RESTORE_KEY}")
+          if [[ "$RESTORE_KEY" != sb_secret_* ]]; then
+            restore_headers+=(-H "Authorization: Bearer ${RESTORE_KEY}")
+          fi
+
           code=$(curl --silent --show-error -o bucket.json -w '%{http_code}' \
-            -H "apikey: ${RESTORE_KEY}" -H "Authorization: Bearer ${RESTORE_KEY}" \
+            "${restore_headers[@]}" \
             "${RESTORE_URL}/storage/v1/bucket/${STORAGE_BUCKET}")
           if [ "$code" = '404' ]; then
             curl --fail-with-body --silent --show-error -X POST \
-              -H "apikey: ${RESTORE_KEY}" -H "Authorization: Bearer ${RESTORE_KEY}" -H 'Content-Type: application/json' \
+              "${restore_headers[@]}" -H 'Content-Type: application/json' \
               --data "{\"id\":\"${STORAGE_BUCKET}\",\"name\":\"${STORAGE_BUCKET}\",\"public\":false,\"file_size_limit\":52428800}" \
               "${RESTORE_URL}/storage/v1/bucket" >/dev/null
           elif [ "$code" != '200' ]; then
-            cat bucket.json >&2; exit 1
+            cat bucket.json >&2
+            echo "Unexpected Storage bucket lookup status: ${code}" >&2
+            exit 1
           fi
 
       - name: Restore sentinel into isolated project
         shell: bash
         run: |
           set -euo pipefail
+          restore_headers=(-H "apikey: ${RESTORE_KEY}")
+          if [[ "$RESTORE_KEY" != sb_secret_* ]]; then
+            restore_headers+=(-H "Authorization: Bearer ${RESTORE_KEY}")
+          fi
           curl --fail-with-body --silent --show-error -X POST \
-            -H "apikey: ${RESTORE_KEY}" -H "Authorization: Bearer ${RESTORE_KEY}" \
+            "${restore_headers[@]}" \
             -H 'Content-Type: text/plain' -H 'x-upsert: true' \
             --data-binary "@restore-artifact/extracted/objects/${SENTINEL_PATH}" \
             "${RESTORE_URL}/storage/v1/object/${STORAGE_BUCKET}/${SENTINEL_PATH}" >/dev/null
@@ -94,8 +105,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          restore_headers=(-H "apikey: ${RESTORE_KEY}")
+          if [[ "$RESTORE_KEY" != sb_secret_* ]]; then
+            restore_headers+=(-H "Authorization: Bearer ${RESTORE_KEY}")
+          fi
           curl --fail-with-body --silent --show-error \
-            -H "apikey: ${RESTORE_KEY}" -H "Authorization: Bearer ${RESTORE_KEY}" \
+            "${restore_headers[@]}" \
             "${RESTORE_URL}/storage/v1/object/authenticated/${STORAGE_BUCKET}/${SENTINEL_PATH}" > restored.txt
           cmp "restore-artifact/extracted/objects/${SENTINEL_PATH}" restored.txt
           echo 'Storage restore proof PASS: bytes are identical in isolated project.'
@@ -107,8 +122,14 @@ jobs:
           set +e
           for pair in "$PROD_URL|$PROD_KEY" "$RESTORE_URL|$RESTORE_KEY"; do
             url=${pair%%|*}; key=${pair#*|}
-            [ -n "$url" ] && [ -n "$key" ] && curl --silent --show-error -X DELETE \
-              -H "apikey: ${key}" -H "Authorization: Bearer ${key}" \
-              "${url}/storage/v1/object/${STORAGE_BUCKET}/${SENTINEL_PATH}" >/dev/null || true
+            if [ -n "$url" ] && [ -n "$key" ]; then
+              headers=(-H "apikey: ${key}")
+              if [[ "$key" != sb_secret_* ]]; then
+                headers+=(-H "Authorization: Bearer ${key}")
+              fi
+              curl --silent --show-error -X DELETE \
+                "${headers[@]}" \
+                "${url}/storage/v1/object/${STORAGE_BUCKET}/${SENTINEL_PATH}" >/dev/null || true
+            fi
           done
           rm -rf restore-artifact/extracted restore-artifact/vencivo-storage.tar.gz restored.txt sentinel.txt bucket.json
