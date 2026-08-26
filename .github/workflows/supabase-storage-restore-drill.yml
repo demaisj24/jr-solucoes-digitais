@@ -76,7 +76,15 @@ jobs:
           code=$(curl --silent --show-error -o bucket.json -w '%{http_code}' \
             "${restore_headers[@]}" \
             "${RESTORE_URL}/storage/v1/bucket/${STORAGE_BUCKET}")
+
+          bucket_missing=false
           if [ "$code" = '404' ]; then
+            bucket_missing=true
+          elif [ "$code" = '400' ] && grep -Eq '"code"[[:space:]]*:[[:space:]]*"NoSuchBucket"|"error"[[:space:]]*:[[:space:]]*"Bucket not found"' bucket.json; then
+            bucket_missing=true
+          fi
+
+          if [ "$bucket_missing" = true ]; then
             curl --fail-with-body --silent --show-error -X POST \
               "${restore_headers[@]}" -H 'Content-Type: application/json' \
               --data "{\"id\":\"${STORAGE_BUCKET}\",\"name\":\"${STORAGE_BUCKET}\",\"public\":false,\"file_size_limit\":52428800}" \
