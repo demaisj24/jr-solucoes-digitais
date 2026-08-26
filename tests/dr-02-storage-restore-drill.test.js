@@ -23,6 +23,13 @@ test('DR-02 restore: aceita sb_secret via apikey sem tentar usa-la como JWT Bear
   assert.match(restore, /"\$\{restore_headers\[@\]\}"/);
 });
 
+test('DR-02 restore: trata bucket ausente mesmo quando Storage responde HTTP 400 com NoSuchBucket', () => {
+  assert.match(restore, /\[ "\$code" = '400' \]/);
+  assert.match(restore, /NoSuchBucket/);
+  assert.match(restore, /Bucket not found/);
+  assert.match(restore, /bucket_missing=true/);
+});
+
 test('DR-02 restore: backup sem sentinel não pode ser contado como prova', () => {
   assert.match(restore, /DR sentinel is absent from this backup/);
   assert.match(restore, /grep -qx 'VENCIVO STORAGE DR SENTINEL v1'/);
