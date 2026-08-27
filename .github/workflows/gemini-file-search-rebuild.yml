@@ -1,0 +1,57 @@
+name: Gemini File Search Rebuild
+
+on:
+  workflow_dispatch:
+    inputs:
+      agent_public_id:
+        description: Public ID of one controlled agent to rebuild
+        required: true
+        type: string
+      mode:
+        description: plan validates canonical sources without Gemini cost; apply creates a new store
+        required: true
+        default: plan
+        type: choice
+        options:
+          - plan
+          - apply
+      confirmation:
+        description: For apply only, type REBUILD-GEMINI-FILE-SEARCH
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gemini-file-search-rebuild-${{ inputs.agent_public_id }}
+  cancel-in-progress: false
+
+jobs:
+  rebuild-one-agent:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      AGENT_PUBLIC_ID: ${{ inputs.agent_public_id }}
+      REBUILD_MODE: ${{ inputs.mode }}
+      REBUILD_CONFIRMATION: ${{ inputs.confirmation }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      KNOWLEDGE_BUCKET: vencivo-knowledge
+    steps:
+      - name: Checkout pinned source
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+
+      - name: Validate bounded target
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$AGENT_PUBLIC_ID"
+          test "$REBUILD_MODE" = 'plan' -o "$REBUILD_MODE" = 'apply'
+          if [ "$REBUILD_MODE" = 'apply' ]; then
+            test "$REBUILD_CONFIRMATION" = 'REBUILD-GEMINI-FILE-SEARCH'
+          fi
+
+      - name: Plan or rebuild one Gemini File Search store
+        run: node scripts/rebuild-gemini-file-search.mjs
